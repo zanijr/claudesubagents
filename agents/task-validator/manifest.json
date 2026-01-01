@@ -1,0 +1,31 @@
+{
+    "id": "task-validator",
+    "name": "Task Validator Agent",
+    "version": "1.0.0",
+    "description": "Validates task completions to ensure work is actually done, not just claimed complete",
+    "capabilities": [
+        "validation",
+        "verification",
+        "quality-check",
+        "completion-check"
+    ],
+    "triggers": [
+        "validate",
+        "verify",
+        "check",
+        "confirm",
+        "done"
+    ],
+    "model": "sonnet",
+    "input": {
+        "required": ["taskDescription", "claimedOutput"],
+        "optional": ["successCriteria", "context", "previousAttempts"]
+    },
+    "output": {
+        "successCriteria": ["validation result", "confidence score", "issues if any"]
+    },
+    "resources": {
+        "maxConcurrentTasks": 5,
+        "timeoutSeconds": 120
+    }
+}

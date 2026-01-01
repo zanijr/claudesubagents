@@ -1,0 +1,31 @@
+{
+  "name": "agent-orchestrator",
+  "version": "1.0.0",
+  "description": "Portable multi-agent orchestration framework for AI-powered task execution",
+  "main": "core/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node core/index.js",
+    "dashboard": "cd dashboard && npm run dev",
+    "init-project": "node scripts/init-project.js",
+    "create-agent": "node scripts/create-agent.js"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "orchestration",
+    "automation",
+    "claude"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "uuid": "^9.0.0",
+    "glob": "^10.3.0",
+    "yaml": "^2.3.0",
+    "gray-matter": "^4.0.3"
+  }
+}

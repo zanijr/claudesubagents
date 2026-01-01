@@ -1,0 +1,48 @@
+{
+    "$schema": "https://raw.githubusercontent.com/zanijr/claudesubagents/main/orchestrator.schema.json",
+    "version": "1.0.0",
+    "name": "My Project Orchestrator",
+    "description": "Agent orchestration configuration for this project",
+
+    "agents": {
+        "enabled": [
+            "code-analyzer",
+            "task-validator",
+            "security-scanner"
+        ],
+        "disabled": [],
+        "projectSpecific": [
+            ".claude/agents/project/"
+        ]
+    },
+
+    "discovery": {
+        "paths": [
+            ".claude/orchestrator/agents",
+            ".claude/agents/project"
+        ],
+        "watchForChanges": true
+    },
+
+    "retry": {
+        "maxRetries": 3,
+        "backoffStrategy": "exponential",
+        "initialDelayMs": 1000,
+        "maxDelayMs": 30000
+    },
+
+    "successThreshold": 0.95,
+
+    "dashboard": {
+        "enabled": true,
+        "url": null,
+        "notifyOnEscalation": true
+    },
+
+    "settings": {
+        "maxConcurrentTasks": 10,
+        "maxTasksPerAgent": 3,
+        "taskTimeoutMs": 300000,
+        "verboseLogging": false
+    }
+}

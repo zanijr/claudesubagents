@@ -1,0 +1,31 @@
+{
+    "id": "security-scanner",
+    "name": "Security Scanner Agent",
+    "version": "1.0.0",
+    "description": "Scans code for security vulnerabilities, secrets, and common security issues",
+    "capabilities": [
+        "security",
+        "vulnerability-scan",
+        "secrets-detection",
+        "security-review"
+    ],
+    "triggers": [
+        "security",
+        "vulnerability",
+        "secrets",
+        "scan",
+        "audit"
+    ],
+    "model": "sonnet",
+    "input": {
+        "required": ["code"],
+        "optional": ["language", "context", "severity"]
+    },
+    "output": {
+        "successCriteria": ["vulnerabilities list", "secrets detected", "risk score", "recommendations"]
+    },
+    "resources": {
+        "maxConcurrentTasks": 3,
+        "timeoutSeconds": 300
+    }
+}
