@@ -41,7 +41,18 @@ Edit `orchestrator.config.json`:
 }
 ```
 
-### 3. Use
+### 3. Use in Claude Code
+
+**Skills are automatically triggered** - just describe what you want in natural language:
+
+| Say this... | What happens |
+|------------|--------------|
+| "List available agents" | Shows all registered agents |
+| "Route this task to an agent" | Routes to best matching agent |
+| "Create a new agent for X" | Guides you through agent creation |
+| "Check task status" | Shows active tasks |
+
+### 4. Programmatic Usage (Optional)
 
 ```javascript
 import { createOrchestrator } from './.claude/orchestrator/core/index.js';

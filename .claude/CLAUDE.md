@@ -2,66 +2,60 @@
 
 This is the multi-agent orchestration framework for coordinating AI agents.
 
-## Skills Available
+## How Skills Work
 
-### /create-agent [name]
-Creates a new agent with proper configuration. Guides you through:
-- Setting capabilities and triggers
-- Choosing agent type (markdown or JavaScript)
-- Writing instructions
-- Validating the configuration
+**Skills are automatically triggered** based on what you say - you don't need to type slash commands. Just describe what you want:
 
-### /orchestrator:route [task]
-Routes a task to the best available agent based on capabilities.
+| Say this... | Skill activates |
+|------------|-----------------|
+| "List available agents" | orchestrator |
+| "Route this task to an agent" | orchestrator |
+| "Create a new agent for X" | create-agent |
+| "What agents can handle security?" | orchestrator |
 
-### /orchestrator:list
-Lists all registered agents and their status.
+## Available Skills
 
-### /orchestrator:status
-Shows active tasks and their progress.
+### orchestrator
+Routes tasks to agents, lists available agents, checks status, shows escalations.
 
-### /orchestrator:escalations
-Shows pending escalations requiring user decisions.
+**Trigger phrases:**
+- "What agents are available?"
+- "Route this to an agent"
+- "Check task status"
+- "Show orchestrator stats"
 
-## Architecture
+### create-agent
+Creates new agents with proper configuration.
 
-```
-Orchestrator (central coordinator)
-     │
-     ├── AgentRegistry (discovers and tracks agents)
-     ├── TaskDispatcher (routes tasks to agents)
-     └── RetryManager (handles failures and escalation)
-           │
-           └── Dashboard (web UI for monitoring)
-```
+**Trigger phrases:**
+- "Create an agent for X"
+- "Make a new agent"
+- "I need an agent to handle X"
 
-## Adding This to a Project
+## Available Agents
 
-```bash
-# As submodule
-git submodule add git@github.com:zanijr/claudesubagents.git .claude/orchestrator
+The orchestrator routes tasks to these agents based on capabilities:
 
-# Initialize
-node .claude/orchestrator/scripts/init-project.js
-```
+| Agent | Capabilities | Triggers |
+|-------|-------------|----------|
+| code-analyzer | code-review, static-analysis | analyze, review, quality |
+| task-validator | validation, completion-check | validate, verify, done |
+| security-scanner | security, vulnerability-scan | security, audit, scan |
 
-## Creating Agents
+## Project-Specific Agents
 
-Use `/create-agent` to ensure proper configuration, or manually create:
+Add custom agents in `.claude/agents/project/`:
 
-**Markdown agent** (`.claude/agents/project/my-agent.md`):
-```markdown
----
-id: my-agent
-capabilities: [cap1, cap2]
-triggers: [keyword1]
----
-Instructions here...
-```
+1. Create a new `.md` file using the template from `.claude/orchestrator/templates/new-agent.md`
+2. Define capabilities and triggers in the frontmatter
+3. Agent auto-registers on next orchestrator run
 
-**JavaScript agent** (`agents/my-agent/`):
-- `manifest.json` - capabilities and metadata
-- `agent.js` - extends BaseAgent
+## Configuration
+
+See `orchestrator.config.json` for:
+- Enabled/disabled agents
+- Retry settings (default: 3 retries, then escalate)
+- Success threshold (default: 95%)
 
 ## Key Files
 

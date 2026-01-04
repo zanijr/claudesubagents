@@ -90,7 +90,8 @@ async function initProject(projectPath = process.cwd()) {
         console.log('Next steps:');
         console.log('  1. Edit orchestrator.config.json to customize settings');
         console.log('  2. Create project agents in .claude/agents/project/');
-        console.log('  3. Use /orchestrator:route to submit tasks\\n');
+        console.log('  3. Say "list available agents" to see registered agents');
+        console.log('  4. Say "route this task to an agent" to use the orchestrator\\n');
 
     } catch (error) {
         console.error('\\n❌ Initialization failed:', error.message);

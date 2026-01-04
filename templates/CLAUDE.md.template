@@ -2,21 +2,17 @@
 
 This project uses the [Agent Orchestrator](https://github.com/zanijr/claudesubagents) framework for coordinating AI agents.
 
-### Quick Start
+### How to Use
 
-```bash
-# Route a task to the best agent
-/orchestrator:route "analyze this code for security issues"
+**Skills are automatically triggered** - just describe what you want in natural language:
 
-# List available agents
-/orchestrator:list
-
-# Check status of running tasks
-/orchestrator:status
-
-# View pending escalations
-/orchestrator:escalations
-```
+| Say this... | What happens |
+|------------|--------------|
+| "List available agents" | Shows all registered agents |
+| "Route this task to an agent" | Routes to best matching agent |
+| "Create a new agent for X" | Guides you through agent creation |
+| "Check task status" | Shows active tasks |
+| "What agents can handle security?" | Lists matching agents |
 
 ### Available Agents
 
@@ -42,7 +38,6 @@ See `orchestrator.config.json` for:
 - Enabled/disabled agents
 - Retry settings (default: 3 retries, then escalate)
 - Success threshold (default: 95%)
-- Dashboard URL
 
 ### Retry & Escalation
 
