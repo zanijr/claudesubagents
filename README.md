@@ -1,211 +1,131 @@
 # Agent Orchestrator
 
-A portable multi-agent orchestration framework for AI-powered task execution. Drop it into any project to coordinate AI agents that work autonomously, validate each other's work, and escalate to you when needed.
+A lightweight framework for routing tasks to specialized AI agents in [Claude Code](https://claude.ai/claude-code). Agents are simple `.md` files with YAML frontmatter - no runtime, no server, no dependencies.
 
-## Features
+## How It Works
 
-- **Autonomous Execution**: Agents work independently on assigned tasks
-- **Automatic Retry**: Failed tasks retry up to 3 times with exponential backoff
-- **Smart Routing**: Tasks automatically dispatched to the best available agent
-- **Validation**: Built-in task validator ensures work is actually complete
-- **Escalation**: After max retries, tasks escalate to you for decision
-- **Web Dashboard**: Real-time monitoring of agent progress and escalations
-- **95% Success Threshold**: Ensures high-quality task completion
+Claude Code has a built-in **Task tool** that can dispatch work to specialized subagents. This framework provides:
 
-## Quick Start
+1. **A routing skill** that reads your agent definitions and dispatches to the best match
+2. **An agent creation skill** that walks you through building new agents
+3. **A standard format** for defining agent capabilities, triggers, and instructions
 
-### 1. Add to Your Project
+```
+User: "Check if my Docker containers are healthy"
+                    ↓
+        Orchestrator skill activates
+                    ↓
+    Reads .claude/agents/project/*.md
+    Matches triggers: "docker", "containers"
+                    ↓
+    Dispatches via Task tool to
+    "Infrastructure Monitor Agent"
+                    ↓
+    Agent runs, returns real results
+```
+
+## Installation
 
 ```bash
-# As a git submodule
-git submodule add https://github.com/zanijr/claudesubagents.git .claude/orchestrator
+# Clone into your Claude Code config
+git clone https://github.com/zanijr/claudesubagents.git ~/.claude/orchestrator
 
-# Initialize in your project
-node .claude/orchestrator/scripts/init-project.js
+# Create skill symlinks
+ln -s ~/.claude/orchestrator/.claude/skills/orchestrator ~/.claude/skills/orchestrator
+ln -s ~/.claude/orchestrator/.claude/skills/create-agent ~/.claude/skills/create-agent
+
+# Create the agent directory in your project
+mkdir -p .claude/agents/project
+
+# Copy the config template (optional)
+cp ~/.claude/orchestrator/templates/orchestrator.config.json ./orchestrator.config.json
+
+# Copy the agent template (optional)
+cp ~/.claude/orchestrator/templates/new-agent.md .claude/agents/project/_template.md
 ```
 
-### 2. Configure
+## Usage
 
-Edit `orchestrator.config.json`:
-
-```json
-{
-    "agents": {
-        "enabled": ["code-analyzer", "task-validator", "security-scanner"],
-        "projectSpecific": [".claude/agents/project/"]
-    },
-    "retry": {
-        "maxRetries": 3
-    },
-    "successThreshold": 0.95
-}
-```
-
-### 3. Use in Claude Code
-
-**Skills are automatically triggered** - just describe what you want in natural language:
+Skills activate automatically based on what you say:
 
 | Say this... | What happens |
 |------------|--------------|
-| "List available agents" | Shows all registered agents |
-| "Route this task to an agent" | Routes to best matching agent |
-| "Create a new agent for X" | Guides you through agent creation |
-| "Check task status" | Shows active tasks |
+| "List available agents" | Shows all agents from `.claude/agents/project/` |
+| "Route this task to an agent" | Matches and dispatches via Task tool |
+| "Create a new agent for X" | Walks through agent creation |
+| "What agents can handle security?" | Finds matching agents |
 
-### 4. Programmatic Usage (Optional)
+## Defining Agents
 
-```javascript
-import { createOrchestrator } from './.claude/orchestrator/core/index.js';
-
-const orchestrator = await createOrchestrator({
-    discoveryPaths: [
-        './.claude/orchestrator/agents',
-        './.claude/agents/project'
-    ]
-});
-
-const task = await orchestrator.submitTask({
-    type: 'code-review',
-    title: 'Review authentication module',
-    description: 'Check for security issues in auth.js',
-    input: { code: fs.readFileSync('auth.js', 'utf8') }
-});
-
-const result = await task.waitForCompletion();
-console.log(result);
-```
-
-## Built-in Agents
-
-| Agent | Capabilities | Description |
-|-------|-------------|-------------|
-| `code-analyzer` | code-review, static-analysis | Analyzes code quality, complexity, and patterns |
-| `task-validator` | validation, completion-check | Validates task completions are real, not superficial |
-| `security-scanner` | security, vulnerability-scan | Scans for vulnerabilities and exposed secrets |
-
-## Creating Custom Agents
-
-### Markdown Agent (Simple)
-
-Create `.claude/agents/project/my-agent.md`:
+Create a `.md` file in `.claude/agents/project/`:
 
 ```markdown
 ---
-id: my-agent
-name: My Custom Agent
-description: Does something specific
-capabilities: [my-capability]
-triggers: [my-keyword]
+id: database-manager
+name: Database Management Agent
+version: 1.0.0
+description: |
+  Manages database migrations, queries, and schema design.
+  Use for any SQL, PostgreSQL, or database optimization tasks.
+capabilities:
+  - sql-queries
+  - schema-design
+  - migrations
+  - query-optimization
+triggers:
+  - database
+  - sql
+  - migration
+  - schema
+  - query
 model: sonnet
 ---
 
-# Agent Instructions
+# Database Management Agent
 
-You are an expert at [task].
-...
+You are an expert database administrator...
+
+## Task Execution
+
+1. Analyze the database requirement
+2. Write and validate SQL
+3. Test the migration path
 ```
 
-### JavaScript Agent (Advanced)
+### Frontmatter Fields
 
-```bash
-node .claude/orchestrator/scripts/create-agent.js my-agent --js
-```
-
-This creates:
-- `manifest.json` - Agent metadata and capabilities
-- `agent.js` - Agent implementation extending `BaseAgent`
-
-## Task Lifecycle
-
-```
-User submits task
-        ↓
-   Dispatching
-   (find best agent)
-        ↓
-     Running
-   (agent executes)
-        ↓
-   ┌─ Success ──→ Complete (95%+ confidence)
-   │
-   └─ Failure ──→ Retry (up to 3x)
-                      ↓
-               Still failing?
-                      ↓
-                 Escalate
-               (notify user)
-                      ↓
-              User decision:
-              - Retry
-              - Modify task
-              - Cancel
-```
-
-## Web Dashboard
-
-Start the dashboard:
-
-```bash
-cd dashboard
-npm install
-npm run dev
-```
-
-Features:
-- Active tasks with real-time progress
-- Escalation queue with approve/reject
-- Agent status monitoring
-- Task history and analytics
-
-## API Reference
-
-### Orchestrator
-
-```javascript
-const orchestrator = new Orchestrator(config);
-await orchestrator.start();
-
-// Submit a task
-const handle = await orchestrator.submitTask({
-    type: 'code-review',
-    input: { code: '...' }
-});
-
-// Get status
-const status = handle.getStatus();
-
-// Wait for completion
-const result = await handle.waitForCompletion();
-
-// Cancel
-await handle.cancel();
-```
-
-### BaseAgent
-
-```javascript
-class MyAgent extends BaseAgent {
-    async execute(task) {
-        this.reportProgress({ percent: 50, message: 'Working...' });
-
-        return {
-            status: 'success',
-            output: { result: '...' },
-            confidence: 0.95
-        };
-    }
-}
-```
+| Field | Required | Description |
+|-------|----------|-------------|
+| `id` | Yes | Lowercase hyphenated identifier |
+| `name` | Yes | Display name - must match Task tool `subagent_type` |
+| `description` | Yes | When to use this agent (used for routing) |
+| `capabilities` | Yes | What the agent can do (used for routing) |
+| `triggers` | No | Keywords that route to this agent |
+| `model` | No | `sonnet` (default), `opus`, or `haiku` |
+| `version` | No | Version tracking |
 
 ## Configuration
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `successThreshold` | 0.95 | Minimum success rate to mark complete |
-| `retry.maxRetries` | 3 | Max retry attempts before escalation |
-| `retry.backoffStrategy` | 'exponential' | linear, exponential, or fixed |
-| `maxConcurrentTasks` | 10 | Max parallel tasks |
-| `maxTasksPerAgent` | 3 | Max tasks per agent |
+`orchestrator.config.json` (optional):
+
+```json
+{
+    "version": "2.0.0",
+    "agentPaths": [".claude/agents/project"],
+    "maxRetries": 2,
+    "defaultModel": "sonnet"
+}
+```
+
+## Task Routing
+
+When a task is submitted:
+
+1. All agent `.md` files are read and their frontmatter parsed
+2. Each agent is scored against the task by matching triggers and capabilities
+3. The best match is dispatched via the **Task tool**
+4. If the agent fails, the next best match is tried (up to `maxRetries`)
+5. If all agents fail, the user is asked for direction
 
 ## License
 

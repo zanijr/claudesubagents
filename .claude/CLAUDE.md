@@ -1,67 +1,61 @@
 # Agent Orchestrator Framework
 
-This is the multi-agent orchestration framework for coordinating AI agents.
+Routes tasks to specialized AI agents via Claude Code's **Task tool**. Agents are defined as `.md` files with YAML frontmatter.
 
-## How Skills Work
+## How It Works
 
-**Skills are automatically triggered** based on what you say - you don't need to type slash commands. Just describe what you want:
+1. User describes a task (e.g., "check my Docker containers")
+2. The orchestrator skill reads agent `.md` files from `.claude/agents/project/`
+3. It matches the task against each agent's `capabilities` and `triggers`
+4. It dispatches to the best match using the **Task tool** with the agent's `name` as `subagent_type`
+5. On failure, it retries with the next best agent (up to 2 retries)
 
-| Say this... | Skill activates |
-|------------|-----------------|
-| "List available agents" | orchestrator |
-| "Route this task to an agent" | orchestrator |
-| "Create a new agent for X" | create-agent |
-| "What agents can handle security?" | orchestrator |
-
-## Available Skills
+## Skills
 
 ### orchestrator
-Routes tasks to agents, lists available agents, checks status, shows escalations.
+Routes tasks to agents, lists available agents, finds agents by capability.
 
-**Trigger phrases:**
-- "What agents are available?"
-- "Route this to an agent"
-- "Check task status"
-- "Show orchestrator stats"
+**Trigger phrases:** "list agents", "route this to an agent", "what agents can handle X?"
 
 ### create-agent
-Creates new agents with proper configuration.
+Creates new agent `.md` files with proper frontmatter and instructions.
 
-**Trigger phrases:**
-- "Create an agent for X"
-- "Make a new agent"
-- "I need an agent to handle X"
+**Trigger phrases:** "create an agent for X", "make a new agent", "I need an agent to handle X"
 
-## Available Agents
+## Agent Format
 
-The orchestrator routes tasks to these agents based on capabilities:
+Agents are `.md` files in `.claude/agents/project/` with this structure:
 
-| Agent | Capabilities | Triggers |
-|-------|-------------|----------|
-| code-analyzer | code-review, static-analysis | analyze, review, quality |
-| task-validator | validation, completion-check | validate, verify, done |
-| security-scanner | security, vulnerability-scan | security, audit, scan |
+```yaml
+---
+id: my-agent
+name: My Agent Name
+description: |
+  When to use this agent and what it does.
+capabilities:
+  - capability-one
+  - capability-two
+triggers:
+  - keyword1
+  - keyword2
+model: sonnet
+---
+```
 
-## Project-Specific Agents
-
-Add custom agents in `.claude/agents/project/`:
-
-1. Create a new `.md` file using the template from `.claude/orchestrator/templates/new-agent.md`
-2. Define capabilities and triggers in the frontmatter
-3. Agent auto-registers on next orchestrator run
+The body contains instructions that the agent follows when dispatched.
 
 ## Configuration
 
-See `orchestrator.config.json` for:
-- Enabled/disabled agents
-- Retry settings (default: 3 retries, then escalate)
-- Success threshold (default: 95%)
+`orchestrator.config.json`:
+- `agentPaths` - Directories containing agent `.md` files
+- `maxRetries` - How many different agents to try on failure (default: 2)
+- `defaultModel` - Model when agent doesn't specify one (default: sonnet)
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `core/Orchestrator.js` | Main coordinator |
-| `core/BaseAgent.js` | Agent contract |
-| `core/RetryManager.js` | Retry + escalation logic |
+| `.claude/skills/orchestrator/SKILL.md` | Task routing skill |
+| `.claude/skills/create-agent/SKILL.md` | Agent creation skill |
 | `templates/new-agent.md` | Agent template |
+| `templates/orchestrator.config.json` | Config template |

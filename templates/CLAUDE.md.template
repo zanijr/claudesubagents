@@ -1,74 +1,25 @@
 ## Multi-Agent Orchestration
 
-This project uses the [Agent Orchestrator](https://github.com/zanijr/claudesubagents) framework for coordinating AI agents.
+This project uses the [Agent Orchestrator](https://github.com/zanijr/claudesubagents) framework for routing tasks to specialized AI agents.
 
 ### How to Use
 
-**Skills are automatically triggered** - just describe what you want in natural language:
+**Skills activate automatically** - just describe what you want:
 
 | Say this... | What happens |
 |------------|--------------|
-| "List available agents" | Shows all registered agents |
-| "Route this task to an agent" | Routes to best matching agent |
-| "Create a new agent for X" | Guides you through agent creation |
-| "Check task status" | Shows active tasks |
-| "What agents can handle security?" | Lists matching agents |
+| "List available agents" | Shows all agents from `.claude/agents/project/` |
+| "Route this task to an agent" | Matches and dispatches via Task tool |
+| "Create a new agent for X" | Walks through agent creation |
+| "What agents can handle X?" | Finds matching agents |
 
-### Available Agents
+### Adding Agents
 
-The orchestrator will automatically select the best agent based on task requirements:
-
-| Agent | Capabilities | Triggers |
-|-------|-------------|----------|
-| code-analyzer | code-review, static-analysis | analyze, review, quality |
-| task-validator | validation, completion-check | validate, verify, done |
-| security-scanner | security, vulnerability-scan | security, audit, scan |
-
-### Project-Specific Agents
-
-Add custom agents in `.claude/agents/project/`:
-
-1. Create a new `.md` file using the template from `.claude/orchestrator/templates/new-agent.md`
-2. Define capabilities and triggers in the frontmatter
-3. Agent auto-registers on next orchestrator run
+Create `.md` files in `.claude/agents/project/` with YAML frontmatter defining `name`, `capabilities`, `triggers`, and `model`. Use the template at `.claude/agents/project/_template.md`.
 
 ### Configuration
 
 See `orchestrator.config.json` for:
-- Enabled/disabled agents
-- Retry settings (default: 3 retries, then escalate)
-- Success threshold (default: 95%)
-
-### Retry & Escalation
-
-Tasks automatically retry up to 3 times on failure:
-1. First retry: Same agent, after 1 second
-2. Second retry: Same agent, after 2 seconds
-3. Third retry: Different agent (if available), after 4 seconds
-4. After 3 failures: Escalated to user for decision
-
-### Task Lifecycle
-
-```
-Submitted → Dispatching → Running → [Success/Failure]
-                              ↓
-                         [If Failed]
-                              ↓
-                    Retrying (up to 3x)
-                              ↓
-                    [If Still Failing]
-                              ↓
-                         Escalated
-                              ↓
-                    [User Decision]
-                              ↓
-              [Retry / Modify / Cancel]
-```
-
-### Validation
-
-The `task-validator` agent automatically validates completions to ensure:
-- Work is actually done, not just claimed complete
-- Output matches task requirements
-- No placeholder or mock data
-- 95% confidence threshold met
+- `agentPaths` - Where agent files live
+- `maxRetries` - Retry attempts with different agents (default: 2)
+- `defaultModel` - Fallback model (default: sonnet)

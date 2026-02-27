@@ -1,112 +1,105 @@
 ---
 name: orchestrator
-description: Route tasks to specialized AI agents, list available agents, check task status, view escalations, and manage the multi-agent orchestration framework. Use when routing work to agents, checking agent availability, or managing task execution.
+description: Route tasks to specialized AI agents, list available agents, and manage the multi-agent orchestration framework. Use when routing work to agents, checking agent availability, or managing task execution.
 ---
 
 # Agent Orchestrator
 
-Use this skill to interact with the multi-agent orchestration framework. This skill provides commands for routing tasks, checking status, and managing agents.
+Route tasks to specialized agents via the **Task tool**. Agents are defined as `.md` files in `.claude/agents/project/` with YAML frontmatter.
 
 ## When This Skill Activates
 
-This skill should be used when the user:
-- Wants to route a task to an agent
-- Asks "what agents are available?"
-- Wants to check task status
-- Asks about escalations or failed tasks
-- Wants to see orchestrator statistics
+- User wants to route a task to an agent
+- User asks "what agents are available?"
+- User asks "what agents can handle X?"
+- User says "route this to an agent" or "have an agent do this"
 
 ## Commands
-
-When the user asks to use the orchestrator, determine which command they want:
-
-### Route a Task
-
-When user says things like "route this to an agent", "have an agent do this", "assign this task":
-
-1. Analyze the task description to identify required capabilities
-2. Read `.claude/orchestrator/agents/*/manifest.json` to find available agents
-3. Score agents based on capability match
-4. Report which agent will handle it
-
-**Example response:**
-```
-Task routed to security-scanner agent
-- Capabilities matched: security, vulnerability-scan
-- Match score: 85
-- Status: Running
-```
 
 ### List Agents
 
 When user says "list agents", "what agents are available", "show agents":
 
-1. Read all manifest.json files in `.claude/orchestrator/agents/`
-2. Display each agent's name, capabilities, and triggers
+1. Read all `.md` files in `.claude/agents/project/` (skip `_template.md`)
+2. Parse the YAML frontmatter from each file to extract: `name`, `capabilities`, `triggers`, `description`, `model`
+3. Display each agent in a table:
 
-**Example response:**
 ```
-Available Agents (3):
+Available Agents:
 
-1. code-analyzer
-   Capabilities: code-review, static-analysis, metrics
-   Triggers: analyze, review, quality
-
-2. security-scanner
-   Capabilities: security, vulnerability-scan, secrets-detection
-   Triggers: security, audit, scan
-
-3. task-validator
-   Capabilities: validation, completion-check
-   Triggers: validate, verify, done
+| Agent | Capabilities | Triggers | Model |
+|-------|-------------|----------|-------|
+| Infrastructure Monitor Agent | docker-monitoring, systemd-monitoring, ... | monitor, docker, containers, ... | sonnet |
+| Android Development Agent | android-ui, kotlin, ... | android, kotlin, ... | sonnet |
 ```
 
-### Check Status
+### Route a Task
 
-When user says "check status", "task status", "what's running":
+When user says "route this to an agent", "have an agent do this", "assign this task", or describes a task that matches an agent's capabilities:
 
-Report on any active orchestrated tasks.
+**Step 1: Discover agents**
 
-### Show Escalations
+Read all `.md` files from `.claude/agents/project/` (skip `_template.md`). Parse the YAML frontmatter between the `---` delimiters to extract:
+- `name` - The agent's display name (also its `subagent_type` for the Task tool)
+- `capabilities` - List of things the agent can do
+- `triggers` - Keywords that indicate this agent should handle a task
+- `description` - What the agent does
+- `model` - Which model to use (sonnet, opus, haiku)
 
-When user says "show escalations", "what failed", "pending issues":
+**Step 2: Match task to agents**
 
-Check for any tasks that failed after retries and need user decisions.
+Score each agent against the task:
+- Check if any trigger words appear in the task description (strong signal)
+- Check if the task requirements overlap with agent capabilities (strong signal)
+- Consider the agent's description for semantic relevance (weaker signal)
+- Rank all agents by match quality
 
-### Show Stats
+Selection rules:
+- Prefer agents with more specific trigger/capability matches over general ones
+- If no agent scores well, tell the user no suitable agent exists and suggest creating one with the `create-agent` skill
+- If multiple agents score similarly, tell the user which ones matched and let them choose
 
-When user says "orchestrator stats", "show statistics":
+**Step 3: Dispatch via Task tool**
 
-Display orchestrator statistics including task counts and success rates.
+Call the **Task tool** with these parameters:
+- `subagent_type`: Set to the agent's `name` field from frontmatter (e.g., "Infrastructure Monitor Agent")
+- `prompt`: A clear description of the task including all relevant context from the user's request
+- `description`: A short 3-5 word summary of the task
+- `model`: Use the agent's `model` field from frontmatter, or fall back to the `defaultModel` from `orchestrator.config.json`
 
-## Task Routing Logic
+Tell the user which agent was selected and why before dispatching.
 
-When routing a task:
+**Step 4: Handle failure**
 
-1. **Analyze the task** to extract:
-   - Task type (from explicit type or inferred from description)
-   - Required capabilities
-   - Keywords that match agent triggers
+If the Task tool agent fails or returns an unsatisfactory result:
+1. Try the next best matching agent (if one exists) - up to 2 retries with different agents
+2. Each retry should include context about what the previous agent attempted
 
-2. **Score each agent** based on:
-   - Capability matches (30 points each)
-   - Trigger keyword matches (15 points each)
+**Step 5: Escalate**
 
-3. **Select the best agent**:
-   - Highest score wins
-   - Must meet minimum score threshold (10)
+If all matching agents fail (or no agents match at all):
+1. Report what was tried and what failed
+2. Ask the user for direction: retry, modify the task, or cancel
+3. Suggest creating a specialized agent if the gap is clear
+
+### Find Agents by Capability
+
+When user says "what agents can handle X?" or "do I have an agent for X?":
+
+1. Read all agent `.md` files from `.claude/agents/project/`
+2. Check each agent's capabilities and triggers against the query
+3. Report matching agents, or suggest creating one if none match
 
 ## Configuration
 
-Settings are in `orchestrator.config.json`:
-- `agents.enabled` - List of enabled agents
-- `retry.maxRetries` - Max retry attempts (default: 3)
-- `successThreshold` - Required success rate (default: 0.95)
+Read `orchestrator.config.json` for:
+- `agentPaths` - Where to find agent `.md` files
+- `maxRetries` - How many different agents to try on failure (default: 2)
+- `defaultModel` - Model to use when agent doesn't specify one (default: sonnet)
 
-## Creating New Agents
+## Important Notes
 
-To create a new agent, ask me to "create an agent" and I'll guide you through:
-1. Defining capabilities and triggers
-2. Writing agent instructions
-3. Proper file placement
-4. Validation
+- Always use the **Task tool** for actual dispatch - this is what makes agents execute real work
+- The `subagent_type` parameter in the Task tool must match the agent's `name` field exactly
+- Agent `.md` files are the source of truth - the frontmatter defines routing, the body defines behavior
+- Do NOT read JS files, manifest.json, or any other legacy format - only `.md` agent files

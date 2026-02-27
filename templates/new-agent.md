@@ -1,49 +1,22 @@
 ---
-# REQUIRED: Unique identifier (lowercase, hyphenated)
 id: my-custom-agent
-
-# REQUIRED: Human-readable name
 name: My Custom Agent
-
-# REQUIRED: What this agent does (used for routing)
-description: >
+version: 1.0.0
+description: |
   Use this agent when you need to [describe trigger conditions].
   This agent specializes in [area of expertise].
-
-# REQUIRED: Capabilities this agent provides (used for task routing)
 capabilities:
   - capability-one
   - capability-two
   - capability-three
-
-# OPTIONAL: Words/phrases that trigger this agent
 triggers:
   - keyword1
   - keyword2
   - phrase to match
-
-# OPTIONAL: Preferred LLM model (sonnet for most, opus for complex reasoning)
 model: sonnet
-
-# OPTIONAL: Version for tracking
-version: 1.0.0
-
-# OPTIONAL: Input requirements
-input:
-  required:
-    - primaryInput
-  optional:
-    - context
-    - options
-
-# OPTIONAL: Success criteria for validation
-output:
-  successCriteria:
-    - Result contains X
-    - Output is properly formatted
 ---
 
-# Agent Instructions
+# My Custom Agent
 
 You are an expert [role description] specializing in [area of expertise].
 
@@ -85,42 +58,9 @@ When executing tasks, follow these steps:
 - [Standard 2]
 - [Standard 3]
 
-## Output Format
-
-Always provide output in the following structure:
-
-```json
-{
-  "status": "success | failure | partial",
-  "output": {
-    "result": "...",
-    "details": {}
-  },
-  "confidence": 0.0-1.0,
-  "recommendations": []
-}
-```
-
 ## Error Handling
 
 When encountering issues:
 1. Report the error clearly
 2. Suggest potential solutions
 3. Indicate if the error is recoverable
-
-## Delegation
-
-If this task requires capabilities outside your expertise, request delegation:
-- Specify the required capability
-- Provide necessary context
-- Explain why delegation is needed
-
-## Examples
-
-### Example 1: [Scenario Name]
-**Input:** [Description of input]
-**Output:** [Expected output]
-
-### Example 2: [Scenario Name]
-**Input:** [Description of input]
-**Output:** [Expected output]
