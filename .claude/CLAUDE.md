@@ -1,30 +1,31 @@
 # Agent Orchestrator Framework
 
-Routes tasks to specialized AI agents via Claude Code's **Task tool**. Agents are defined as `.md` files with YAML frontmatter.
+Autonomous planner and executor that breaks goals into subtasks, creates any missing agents, and dispatches everything via the **Task tool** without user intervention.
 
 ## How It Works
 
-1. User describes a task (e.g., "check my Docker containers")
-2. The orchestrator skill reads agent `.md` files from `.claude/agents/project/`
-3. It matches the task against each agent's `capabilities` and `triggers`
-4. It dispatches to the best match using the **Task tool** with the agent's `name` as `subagent_type`
-5. On failure, it retries with the next best agent (up to 2 retries)
+1. User describes a goal (e.g., `/orchestrator set up monitoring for my Docker stack`)
+2. Orchestrator plans: decomposes goal into subtasks with required capabilities
+3. Matches subtasks to existing agents from `.claude/agents/project/*.md`
+4. Auto-creates new agents for any unmatched subtasks
+5. Dispatches all subtasks via the **Task tool** (parallel when independent)
+6. Reports results: what succeeded, what failed, what agents were created
 
 ## Skills
 
 ### orchestrator
-Routes tasks to agents, lists available agents, finds agents by capability.
+Autonomous planner/executor. Plans, matches/creates agents, dispatches, reports.
 
-**Trigger phrases:** "list agents", "route this to an agent", "what agents can handle X?"
+**Trigger:** `/orchestrator`, "orchestrate this", "plan and execute", "list agents"
 
 ### create-agent
-Creates new agent `.md` files with proper frontmatter and instructions.
+Manual agent creation with guided questions. Use when you want to create a single agent interactively.
 
-**Trigger phrases:** "create an agent for X", "make a new agent", "I need an agent to handle X"
+**Trigger:** "create an agent for X", "make a new agent"
 
 ## Agent Format
 
-Agents are `.md` files in `.claude/agents/project/` with this structure:
+Agents are `.md` files in `.claude/agents/project/` with YAML frontmatter:
 
 ```yaml
 ---
@@ -34,28 +35,19 @@ description: |
   When to use this agent and what it does.
 capabilities:
   - capability-one
-  - capability-two
 triggers:
   - keyword1
-  - keyword2
 model: sonnet
 ---
 ```
 
-The body contains instructions that the agent follows when dispatched.
-
-## Configuration
-
-`orchestrator.config.json`:
-- `agentPaths` - Directories containing agent `.md` files
-- `maxRetries` - How many different agents to try on failure (default: 2)
-- `defaultModel` - Model when agent doesn't specify one (default: sonnet)
+The `name` field must match the Task tool's `subagent_type`. The body contains agent instructions.
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `.claude/skills/orchestrator/SKILL.md` | Task routing skill |
-| `.claude/skills/create-agent/SKILL.md` | Agent creation skill |
+| `.claude/skills/orchestrator/SKILL.md` | Autonomous planner/executor |
+| `.claude/skills/create-agent/SKILL.md` | Manual agent creation |
 | `templates/new-agent.md` | Agent template |
 | `templates/orchestrator.config.json` | Config template |

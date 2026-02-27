@@ -1,105 +1,126 @@
 ---
 name: orchestrator
-description: Route tasks to specialized AI agents, list available agents, and manage the multi-agent orchestration framework. Use when routing work to agents, checking agent availability, or managing task execution.
+description: Autonomous task planner and executor. Breaks down goals into subtasks, identifies or creates the agents needed, and dispatches everything via the Task tool without user intervention. Use when orchestrating work, routing to agents, or listing agents.
 ---
 
 # Agent Orchestrator
 
-Route tasks to specialized agents via the **Task tool**. Agents are defined as `.md` files in `.claude/agents/project/` with YAML frontmatter.
+You are an autonomous planner and executor. When invoked, you take the user's goal, break it into subtasks, ensure agents exist for each subtask, and dispatch all work via the **Task tool** - all without stopping to ask the user for permission at each step.
 
 ## When This Skill Activates
 
-- User wants to route a task to an agent
-- User asks "what agents are available?"
-- User asks "what agents can handle X?"
-- User says "route this to an agent" or "have an agent do this"
+- User invokes `/orchestrator` with a goal or task description
+- User says "orchestrate this", "plan and execute", "have agents do this"
+- User says "list agents" or "what agents are available"
 
-## Commands
+## Core Workflow
 
-### List Agents
+When the user provides a goal (anything beyond "list agents"):
+
+### Phase 1: Plan
+
+Analyze the user's goal and decompose it into concrete subtasks. For each subtask, identify:
+- What needs to be done (clear, actionable description)
+- What capabilities are required
+- What keywords describe this work
+
+Output the plan as a numbered list so the user can see what's coming. Do NOT ask for approval - just show the plan and proceed.
+
+### Phase 2: Match Agents
+
+1. Read all `.md` files from `.claude/agents/project/` (skip `_template.md`)
+2. Parse YAML frontmatter from each file: `name`, `capabilities`, `triggers`, `description`, `model`
+3. For each subtask, score every agent:
+   - Trigger keyword matches against the subtask description (strong signal)
+   - Capability overlap with subtask requirements (strong signal)
+   - Description semantic relevance (weaker signal)
+4. Assign the best-matching agent to each subtask
+
+### Phase 3: Create Missing Agents
+
+For any subtask with no good agent match:
+
+**Auto-create the agent immediately.** Do not ask the user. Write a new `.md` file to `.claude/agents/project/` with:
+
+```markdown
+---
+id: {lowercase-hyphenated}
+name: {Title Case Agent Name}
+version: 1.0.0
+description: |
+  {What this agent does and when to use it.}
+capabilities:
+  - {capability-1}
+  - {capability-2}
+triggers:
+  - {trigger-1}
+  - {trigger-2}
+model: {sonnet|opus|haiku - choose based on task complexity}
+---
+
+# {Agent Name}
+
+You are an expert {role} specializing in {domain}.
+
+## Core Competencies
+{List key skills}
+
+## Task Execution
+{Domain-specific execution steps}
+```
+
+Make the agent instructions specific and actionable for the domain. Include relevant project context if you know it (file paths, tech stack, etc.). Tell the user you created the agent and move on.
+
+### Phase 4: Dispatch
+
+For each subtask, call the **Task tool**:
+- `subagent_type`: The agent's `name` field from frontmatter
+- `prompt`: Detailed task description with all relevant context
+- `description`: Short 3-5 word summary
+- `model`: From the agent's frontmatter, or `defaultModel` from `orchestrator.config.json`
+
+**Dispatch independent subtasks in parallel** using multiple Task tool calls in a single message. Only sequence subtasks that have dependencies.
+
+### Phase 5: Handle Failures
+
+If an agent fails:
+1. Try the next best matching agent for that subtask (up to 2 retries with different agents)
+2. Include context about what the previous agent tried
+3. If all agents fail for a subtask, report the failure and continue with remaining subtasks
+4. At the end, summarize what succeeded and what failed
+
+Do NOT stop the entire execution because one subtask failed. Complete everything possible, then report.
+
+### Phase 6: Report
+
+After all subtasks complete (or fail), give the user a summary:
+- What was planned
+- What succeeded
+- What failed and why
+- Any agents that were created
+- Suggested next steps if anything is incomplete
+
+## List Agents Command
 
 When user says "list agents", "what agents are available", "show agents":
 
 1. Read all `.md` files in `.claude/agents/project/` (skip `_template.md`)
-2. Parse the YAML frontmatter from each file to extract: `name`, `capabilities`, `triggers`, `description`, `model`
-3. Display each agent in a table:
-
-```
-Available Agents:
-
-| Agent | Capabilities | Triggers | Model |
-|-------|-------------|----------|-------|
-| Infrastructure Monitor Agent | docker-monitoring, systemd-monitoring, ... | monitor, docker, containers, ... | sonnet |
-| Android Development Agent | android-ui, kotlin, ... | android, kotlin, ... | sonnet |
-```
-
-### Route a Task
-
-When user says "route this to an agent", "have an agent do this", "assign this task", or describes a task that matches an agent's capabilities:
-
-**Step 1: Discover agents**
-
-Read all `.md` files from `.claude/agents/project/` (skip `_template.md`). Parse the YAML frontmatter between the `---` delimiters to extract:
-- `name` - The agent's display name (also its `subagent_type` for the Task tool)
-- `capabilities` - List of things the agent can do
-- `triggers` - Keywords that indicate this agent should handle a task
-- `description` - What the agent does
-- `model` - Which model to use (sonnet, opus, haiku)
-
-**Step 2: Match task to agents**
-
-Score each agent against the task:
-- Check if any trigger words appear in the task description (strong signal)
-- Check if the task requirements overlap with agent capabilities (strong signal)
-- Consider the agent's description for semantic relevance (weaker signal)
-- Rank all agents by match quality
-
-Selection rules:
-- Prefer agents with more specific trigger/capability matches over general ones
-- If no agent scores well, tell the user no suitable agent exists and suggest creating one with the `create-agent` skill
-- If multiple agents score similarly, tell the user which ones matched and let them choose
-
-**Step 3: Dispatch via Task tool**
-
-Call the **Task tool** with these parameters:
-- `subagent_type`: Set to the agent's `name` field from frontmatter (e.g., "Infrastructure Monitor Agent")
-- `prompt`: A clear description of the task including all relevant context from the user's request
-- `description`: A short 3-5 word summary of the task
-- `model`: Use the agent's `model` field from frontmatter, or fall back to the `defaultModel` from `orchestrator.config.json`
-
-Tell the user which agent was selected and why before dispatching.
-
-**Step 4: Handle failure**
-
-If the Task tool agent fails or returns an unsatisfactory result:
-1. Try the next best matching agent (if one exists) - up to 2 retries with different agents
-2. Each retry should include context about what the previous agent attempted
-
-**Step 5: Escalate**
-
-If all matching agents fail (or no agents match at all):
-1. Report what was tried and what failed
-2. Ask the user for direction: retry, modify the task, or cancel
-3. Suggest creating a specialized agent if the gap is clear
-
-### Find Agents by Capability
-
-When user says "what agents can handle X?" or "do I have an agent for X?":
-
-1. Read all agent `.md` files from `.claude/agents/project/`
-2. Check each agent's capabilities and triggers against the query
-3. Report matching agents, or suggest creating one if none match
+2. Parse YAML frontmatter for: `name`, `capabilities`, `triggers`, `model`
+3. Display as a table
 
 ## Configuration
 
 Read `orchestrator.config.json` for:
-- `agentPaths` - Where to find agent `.md` files
-- `maxRetries` - How many different agents to try on failure (default: 2)
-- `defaultModel` - Model to use when agent doesn't specify one (default: sonnet)
+- `agentPaths` - Where to find agent `.md` files (default: `.claude/agents/project`)
+- `maxRetries` - How many different agents to try per subtask on failure (default: 2)
+- `defaultModel` - Model when agent doesn't specify one (default: sonnet)
 
-## Important Notes
+## Key Rules
 
-- Always use the **Task tool** for actual dispatch - this is what makes agents execute real work
-- The `subagent_type` parameter in the Task tool must match the agent's `name` field exactly
-- Agent `.md` files are the source of truth - the frontmatter defines routing, the body defines behavior
-- Do NOT read JS files, manifest.json, or any other legacy format - only `.md` agent files
+- **Be autonomous.** Plan, create agents, dispatch, and report. Do not ask for permission between phases.
+- **Be parallel.** Dispatch independent subtasks simultaneously.
+- **Be resilient.** One failure doesn't stop everything. Complete what you can.
+- **Be transparent.** Show the plan upfront and report results at the end.
+- Always use the **Task tool** for dispatch - this is what makes agents do real work.
+- The `subagent_type` must match the agent's `name` field exactly.
+- Agent `.md` files are the source of truth. Only read `.md` files from `.claude/agents/project/`.
