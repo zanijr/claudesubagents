@@ -50,5 +50,25 @@ if [ ! -f "$PROJECT_DIR/orchestrator.config.json" ]; then
     echo "  Copied: orchestrator.config.json"
 fi
 
+# 4. Create checkpoint directory
+mkdir -p "$PROJECT_DIR/.claude/context/checkpoints"
+echo "  Created: .claude/context/checkpoints/"
+
+# 5. Add checkpoint directory to .gitignore
+GITIGNORE="$PROJECT_DIR/.gitignore"
+CHECKPOINT_ENTRY=".claude/context/checkpoints/"
+if [ -f "$GITIGNORE" ]; then
+    if ! grep -qF "$CHECKPOINT_ENTRY" "$GITIGNORE"; then
+        echo "" >> "$GITIGNORE"
+        echo "# Agent orchestrator checkpoint files (ephemeral runtime state)" >> "$GITIGNORE"
+        echo "$CHECKPOINT_ENTRY" >> "$GITIGNORE"
+        echo "  Updated: .gitignore (added checkpoint directory)"
+    fi
+else
+    echo "# Agent orchestrator checkpoint files (ephemeral runtime state)" > "$GITIGNORE"
+    echo "$CHECKPOINT_ENTRY" >> "$GITIGNORE"
+    echo "  Created: .gitignore (added checkpoint directory)"
+fi
+
 echo ""
 echo "Done! Say 'list available agents' in Claude Code to get started."

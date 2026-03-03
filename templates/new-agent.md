@@ -64,3 +64,13 @@ When encountering issues:
 1. Report the error clearly
 2. Suggest potential solutions
 3. Indicate if the error is recoverable
+
+## Context Management
+
+When the orchestrator injects a **Checkpoint Protocol** into your prompt, follow these rules:
+
+1. **Track your turn count** — increment a mental counter each time you respond
+2. **Write checkpoints** at the interval specified (default: every 20 turns) to the checkpoint file path provided
+3. **Use the checkpoint format** — YAML frontmatter with `task_run_id`, `subtask`, `agent`, `continuation`, `turn_count`, `status`, `timestamp`, followed by structured sections: `Completed Work`, `Remaining Work`, `Current State`, `Decisions Made`, `Next Action`
+4. **Signal completion** — end your final response with `NEEDS_CONTINUATION: false` if work is done, or `NEEDS_CONTINUATION: true` if you ran out of turns before finishing
+5. **On continuation** — if your prompt says you are a continuation, read the checkpoint file first, verify completed work still holds, then resume from the `Next Action` section. Preserve all prior decisions.

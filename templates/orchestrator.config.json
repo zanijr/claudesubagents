@@ -1,6 +1,13 @@
 {
-    "version": "2.0.0",
+    "version": "3.0.0",
     "agentPaths": [".claude/agents/project"],
     "maxRetries": 2,
-    "defaultModel": "sonnet"
+    "defaultModel": "sonnet",
+    "contextManagement": {
+        "enabled": true,
+        "checkpointDir": ".claude/context/checkpoints",
+        "maxContinuations": 5,
+        "checkpointIntervalTurns": 20,
+        "maxTurns": 80
+    }
 }
