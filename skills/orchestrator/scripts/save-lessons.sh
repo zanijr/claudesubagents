@@ -30,7 +30,8 @@ HEADER
 fi
 
 # Prune lessons-learned to 200 entries max
-LESSON_COUNT=$(grep -c '^## \[' "$LESSONS_FILE" 2>/dev/null || echo "0")
+LESSON_COUNT=$(grep -c '^## \[' "$LESSONS_FILE" 2>/dev/null)
+LESSON_COUNT=${LESSON_COUNT:-0}
 if [ "$LESSON_COUNT" -gt 200 ]; then
   HEADER_LINES=$(head -4 "$LESSONS_FILE")
   # Find the start line of the 200th-from-last entry
@@ -45,7 +46,8 @@ if [ "$LESSON_COUNT" -gt 200 ]; then
 fi
 
 # Prune failure log to 100 entries max
-FAILURE_COUNT=$(grep -c '^## \[' "$FAILURE_LOG" 2>/dev/null || echo "0")
+FAILURE_COUNT=$(grep -c '^## \[' "$FAILURE_LOG" 2>/dev/null)
+FAILURE_COUNT=${FAILURE_COUNT:-0}
 if [ "$FAILURE_COUNT" -gt 100 ]; then
   HEADER_LINES=$(head -4 "$FAILURE_LOG")
   KEEP_FROM=$(grep -n '^## \[' "$FAILURE_LOG" | tail -100 | head -1 | cut -d: -f1)

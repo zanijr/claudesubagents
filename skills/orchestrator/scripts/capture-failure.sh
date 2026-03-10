@@ -22,7 +22,7 @@ fi
 INPUT=$(cat)
 
 # Extract fields
-TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // "unknown"' 2>/dev/null)
+TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // "unknown"' 2>/dev/null || echo "unknown")
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # Append failure record
@@ -34,7 +34,8 @@ cat >> "$FAILURE_LOG" << EOF
 EOF
 
 # Prune to last 100 entries (keep header + last 100 ## blocks)
-ENTRY_COUNT=$(grep -c '^## \[' "$FAILURE_LOG" 2>/dev/null || echo "0")
+ENTRY_COUNT=$(grep -c '^## \[' "$FAILURE_LOG" 2>/dev/null)
+ENTRY_COUNT=${ENTRY_COUNT:-0}
 if [ "$ENTRY_COUNT" -gt 100 ]; then
   # Keep header (first 3 lines) + last 100 entries
   HEADER_LINES=$(head -4 "$FAILURE_LOG")
