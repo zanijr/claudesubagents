@@ -1,0 +1,31 @@
+{
+  "name": "agent-orchestrator-cc",
+  "version": "3.1.0",
+  "description": "Autonomous agent orchestrator for Claude Code — plan, build, self-heal, and learn",
+  "bin": {
+    "agent-orchestrator": "./bin/install.mjs"
+  },
+  "files": [
+    "bin/",
+    "skills/",
+    "agents/",
+    "templates/",
+    ".claude-plugin/"
+  ],
+  "keywords": [
+    "claude-code",
+    "ai-agents",
+    "orchestrator",
+    "claude",
+    "subagents"
+  ],
+  "author": "zanijr",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zanijr/claudesubagents.git"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

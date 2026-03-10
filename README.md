@@ -27,55 +27,59 @@ User: "Check if my Docker containers are healthy"
 
 ## Installation
 
-### One-liner (Linux / macOS / WSL)
+One command — works on Linux, macOS, WSL, and Windows (with Node.js):
+
+```bash
+npx agent-orchestrator-cc@latest
+```
+
+The installer will ask you:
+1. **Runtime** — pick Claude Code
+2. **Scope** — Global (all projects) or Local (current project only)
+
+### Project Setup
+
+After installing globally, set up each project:
+
+```bash
+cd my-project
+npx agent-orchestrator-cc@latest    # choose "Local"
+```
+
+This creates the agent directory, checkpoint directory, copies templates, and updates `.gitignore`.
+
+### Updating
+
+From inside Claude Code:
+
+```
+/orchestrator:update
+```
+
+Or from the terminal:
+
+```bash
+npx agent-orchestrator-cc@latest --update
+```
+
+### Alternative Install Methods
+
+<details>
+<summary>curl one-liner (Linux / macOS / WSL)</summary>
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zanijr/claudesubagents/main/scripts/get.sh | bash
 ```
+</details>
 
-Or with wget:
-
-```bash
-wget -qO- https://raw.githubusercontent.com/zanijr/claudesubagents/main/scripts/get.sh | bash
-```
-
-### Windows (PowerShell)
-
-```powershell
-git clone https://github.com/zanijr/claudesubagents.git "$env:USERPROFILE\.claude\orchestrator"
-& "$env:USERPROFILE\.claude\orchestrator\scripts\marketplace.ps1" install
-```
-
-### Manual Install
+<details>
+<summary>Manual install</summary>
 
 ```bash
 git clone https://github.com/zanijr/claudesubagents.git ~/.claude/orchestrator
 bash ~/.claude/orchestrator/scripts/marketplace.sh install
 ```
-
-## Marketplace CLI
-
-After installing, you get the `claude-market` command:
-
-```bash
-claude-market list             # List available packages (skills & agents)
-claude-market info <package>   # Show package details
-claude-market status           # Check installation and available updates
-claude-market update           # Update to the latest version
-claude-market setup            # Set up the current project (cd into it first)
-claude-market uninstall        # Remove the framework
-```
-
-### Project Setup
-
-After installing globally, set up each project you want to use orchestrator in:
-
-```bash
-cd my-project
-claude-market setup
-```
-
-This creates the agent directory, checkpoint directory, copies templates, and updates `.gitignore`.
+</details>
 
 ## Usage
 
