@@ -1,92 +1,130 @@
 ---
 name: orchestrator
-version: 2.0.0
-description: This skill should be used when the user asks to "orchestrate a task", "plan and execute this", "have agents do this", "break this into subtasks", "list agents", or needs autonomous multi-agent task decomposition and dispatch.
+version: 3.0.0
+description: This skill should be used when the user asks to "orchestrate a task", "plan and execute this", "have agents do this", "build this for me", "break this into subtasks", "list agents", or needs autonomous multi-agent task decomposition, execution, self-healing, and learning.
 user-invocable: true
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite, Agent
 argument-hint: [goal or "list agents"]
+hooks:
+  PostToolUseFailure:
+    - matcher: "Bash|Agent"
+      hooks:
+        - type: command
+          command: "bash .claude/skills/orchestrator/scripts/capture-failure.sh"
+  Stop:
+    - hooks:
+        - type: command
+          command: "bash .claude/skills/orchestrator/scripts/save-lessons.sh"
 ---
 
 # Agent Orchestrator
 
-Autonomous planner and executor. Take the user's goal, decompose it into subtasks, ensure agents exist for each, and dispatch all work via the **Task tool** — without stopping for permission at each step.
+Autonomous planner, builder, and learner. Take the user's idea, decompose it, build it, fix what breaks, and remember what was learned — all without stopping to ask permission.
 
 ## Live Context
 
 Available agents: !`ls .claude/agents/project/*.md 2>/dev/null | xargs -I{} basename {} .md || echo "No agents found"`
 Configuration: !`cat orchestrator.config.json 2>/dev/null || echo "No config found — using defaults"`
+Lessons learned: !`cat .claude/memory/lessons-learned.md 2>/dev/null | tail -50 || echo "No lessons yet — first run"`
+Recent failures: !`cat .claude/memory/failure-log.md 2>/dev/null | tail -20 || echo "No failures recorded"`
 
-## Core Workflow
+## Core Philosophy
 
-### Phase 1: Plan
+**Idea → Plan → Build → Test → Fail → Fix → Learn → Remember**
 
-Decompose the goal into concrete subtasks. For each subtask, identify:
-- What needs to be done (clear, actionable description)
-- Required capabilities and keywords
+Never stop at failure. Analyze it, try a different approach, and record what worked. Every run makes future runs smarter.
 
-Output the plan as a numbered list. Do NOT ask for approval — show the plan and proceed.
+## Autonomous Workflow
 
-### Phase 2: Match Agents
+### Phase 1: Understand & Plan
+
+Decompose the user's idea into concrete subtasks. For each subtask:
+- What needs to be done (actionable description)
+- What capabilities are required
+- Success criteria (how to verify it worked)
+- Dependencies on other subtasks
+
+Check lessons learned (injected above) for relevant past knowledge. If a similar task was attempted before, incorporate what was learned.
+
+Output the plan as a numbered list with success criteria. Do NOT ask for approval — show the plan and proceed.
+
+### Phase 2: Match & Create Agents
 
 1. Read all `.md` files from `.claude/agents/project/` (skip `_template.md`)
-2. Parse YAML frontmatter: `name`, `capabilities`, `triggers`, `description`, `model`
-3. Score every agent per subtask:
-   - Trigger keyword matches (strong signal)
-   - Capability overlap (strong signal)
-   - Description semantic relevance (weaker signal)
-4. Assign the best-matching agent to each subtask
+2. Parse YAML frontmatter and score agents against subtask requirements
+3. For unmatched subtasks, auto-create agents immediately — write `.md` files to `.claude/agents/project/` with proper frontmatter and actionable instructions
+4. Check lessons learned for agent-specific notes (e.g., "agent X struggles with Y, use Z instead")
 
-### Phase 3: Create Missing Agents
+See [references/agent-creation-template.md](references/agent-creation-template.md) for agent file structure.
 
-For any subtask with no good match, auto-create the agent immediately. Write a new `.md` file to `.claude/agents/project/` with proper frontmatter (`id`, `name`, `version`, `description`, `capabilities`, `triggers`, `model`) and actionable body instructions. Include relevant project context (file paths, tech stack). Tell the user and move on.
+### Phase 3: Prepare & Dispatch
 
-### Phase 3.5: Prepare Dispatch Context
-
-Read `orchestrator.config.json` and check `contextManagement`.
+Read `orchestrator.config.json` for context management settings.
 
 If `contextManagement.enabled` is `true` (default):
-1. Generate a `taskRunId` (e.g., `run-20260310-143022`)
-2. Read config values with defaults: `checkpointDir` (`.claude/context/checkpoints`), `maxContinuations` (`5`), `checkpointIntervalTurns` (`20`), `maxTurns` (`80`)
-3. Create checkpoint directory: `mkdir -p {checkpointDir}`
-4. Clean up stale checkpoints from previous runs
-5. Prepare the Checkpoint Protocol block for agent prompt injection
+- Generate a `taskRunId`
+- Create checkpoint directory
+- Inject Checkpoint Protocol into agent prompts
 
-If disabled, skip this phase entirely.
+See [references/checkpoint-protocol.md](references/checkpoint-protocol.md) for protocol details.
+See [references/continuation-loop.md](references/continuation-loop.md) for dispatch pseudocode.
 
-See [references/checkpoint-protocol.md](references/checkpoint-protocol.md) for the full Checkpoint Protocol block and continuation loop pseudocode.
+Dispatch independent subtasks **in parallel** via multiple Task tool calls. Only sequence subtasks with dependencies.
 
-### Phase 4: Dispatch
+### Phase 4: Self-Healing Loop
 
-Dispatch each subtask via the **Task tool**.
+When a subtask fails, do NOT just retry blindly. Follow the self-healing protocol:
 
-- `subagent_type`: Agent's `name` field from frontmatter
-- `prompt`: Detailed task description with all relevant context
-- `description`: Short 3-5 word summary
-- `model`: From agent frontmatter or `defaultModel` from config
+1. **Capture** — Record the exact error, what was attempted, and the environment state
+2. **Analyze** — Determine root cause. Is it a code bug? Missing dependency? Wrong approach? Environment issue?
+3. **Adapt** — Choose a different strategy:
+   - Try a different agent with different capabilities
+   - Modify the subtask description with more specific constraints
+   - Break the subtask into smaller pieces
+   - Apply a fix from lessons learned if a similar failure was seen before
+4. **Retry** — Dispatch with the adapted approach (up to `maxRetries` attempts per subtask)
+5. **Record** — Log the failure and fix to `.claude/memory/failure-log.md` for future reference
 
-**With context management enabled**, wrap each dispatch in a continuation loop. On first dispatch, append the Checkpoint Protocol block to the prompt. On continuations, read the checkpoint file and build a continuation prompt with the checkpoint context.
+See [references/self-healing.md](references/self-healing.md) for the full self-healing protocol.
 
-See [references/continuation-loop.md](references/continuation-loop.md) for full dispatch pseudocode.
+### Phase 5: Verify
 
-**Dispatch independent subtasks in parallel** using multiple Task tool calls in a single message. Only sequence subtasks with dependencies.
+After all subtasks report success:
 
-### Phase 5: Handle Failures
+1. **Run verification** — Execute the success criteria defined in Phase 1
+2. **Integration check** — If subtasks produce code, run tests/builds/linters
+3. **If verification fails** — Feed the failure back into Phase 4 (self-healing loop)
+4. **If verification passes** — Proceed to reporting
 
-1. Retry with the next best matching agent (up to `maxRetries`)
-2. Include context about what the previous agent tried
-3. Report partially complete subtasks from last checkpoint's `Completed Work`
-4. Continue with remaining subtasks — do NOT stop everything for one failure
+Do not skip verification. A subtask is not done until its success criteria pass.
 
-### Phase 6: Report
+### Phase 6: Learn & Remember
 
-Summarize after all subtasks complete or fail:
-- What was planned
-- What succeeded
-- What partially completed (with continuation stats)
-- What failed and why
+After the task completes (success or partial failure):
+
+1. **Extract lessons** — What worked? What failed? What workarounds were needed?
+2. **Write to memory** — Append to `.claude/memory/lessons-learned.md`:
+   ```
+   ## [{date}] {task summary}
+   - **What worked**: {description}
+   - **What failed**: {description}
+   - **Root cause**: {if failure}
+   - **Fix applied**: {what resolved it}
+   - **Agent notes**: {any agent-specific observations}
+   - **For next time**: {actionable advice for similar tasks}
+   ```
+3. **Update failure log** — Mark resolved failures in `.claude/memory/failure-log.md`
+4. **Prune old entries** — Keep lessons-learned under 200 entries (remove oldest when exceeded)
+
+### Phase 7: Report
+
+Summarize:
+- What was planned and what succeeded
+- What failed, why, and how it was fixed (self-healing stats)
+- What partially completed (with continuation stats if context management active)
 - Agents created
-- Context management stats (if enabled)
-- Suggested next steps
+- Lessons learned this session
+- Suggested next steps if anything remains incomplete
 
 ## List Agents Command
 
@@ -96,19 +134,34 @@ When user says "list agents", "what agents are available", or "show agents":
 2. Parse frontmatter for: `name`, `capabilities`, `triggers`, `model`
 3. Display as a table
 
+## Memory System
+
+The orchestrator maintains persistent memory in `.claude/memory/`:
+
+| File | Purpose |
+|------|---------|
+| `lessons-learned.md` | What worked, what failed, and why — consulted every run |
+| `failure-log.md` | Raw failure records for pattern detection |
+
+Memory is injected into every run via dynamic context injection (see Live Context above). This means the orchestrator gets smarter with each use — it knows what approaches failed before and what fixes worked.
+
 ## Key Rules
 
-- **Be autonomous.** Plan, create agents, dispatch, and report without asking permission.
+- **Be autonomous.** Plan, create agents, dispatch, fix, learn, and report. No permission needed between phases.
 - **Be parallel.** Dispatch independent subtasks simultaneously.
-- **Be resilient.** One failure doesn't stop everything.
-- **Be transparent.** Show the plan upfront and report at the end.
-- **Be persistent.** Context management ensures large tasks complete without losing progress.
+- **Be resilient.** Never stop at first failure. Analyze, adapt, retry.
+- **Be verifiable.** Define success criteria upfront and check them.
+- **Be a learner.** Every run produces knowledge for future runs.
+- **Be transparent.** Show the plan, show failures, show fixes, show lessons.
 - Always use the **Task tool** for dispatch.
 - The `subagent_type` must match the agent's `name` field exactly.
 - Clean up checkpoint files after successful completion.
+- Never delete or overwrite lessons-learned — only append.
 
 ## Additional Resources
 
-- [references/checkpoint-protocol.md](references/checkpoint-protocol.md) — Full checkpoint protocol block injected into agent prompts
+- [references/self-healing.md](references/self-healing.md) — Full self-healing protocol with error analysis patterns
+- [references/memory-protocol.md](references/memory-protocol.md) — Memory system details and pruning rules
+- [references/checkpoint-protocol.md](references/checkpoint-protocol.md) — Checkpoint protocol for context management
 - [references/continuation-loop.md](references/continuation-loop.md) — Continuation loop dispatch pseudocode
 - [references/agent-creation-template.md](references/agent-creation-template.md) — Template for auto-created agents
