@@ -217,7 +217,31 @@ function installGlobal(home, { isUpdate = false } = {}) {
 
   // On update: check for user-modified files and back them up
   if (isUpdate) {
-    const oldManifest = loadManifest(home);
+    let oldManifest = loadManifest(home);
+
+    // If no manifest exists (upgrading from pre-manifest version),
+    // build a reference from the source package files so we can detect
+    // user modifications by comparing installed vs. what we're about to ship.
+    if (Object.keys(oldManifest).length === 0 && existsSync(skillsDir)) {
+      info("No manifest found — building reference from source to detect modifications...");
+      const sourceManifest = {};
+      // Hash the source package files (what we're about to install)
+      for (const skill of readdirSync(sourceSkillsDir)) {
+        const src = join(sourceSkillsDir, skill);
+        for (const rel of collectFiles(src, src)) {
+          sourceManifest[join(skill, rel)] = hashFile(join(src, rel));
+        }
+      }
+      // Also include the update skill
+      const updateSrc = join(PKG_ROOT, "bin", "skills", "update");
+      if (existsSync(updateSrc)) {
+        for (const rel of collectFiles(updateSrc, updateSrc)) {
+          sourceManifest[join("orchestrator-update", rel)] = hashFile(join(updateSrc, rel));
+        }
+      }
+      oldManifest = sourceManifest;
+    }
+
     if (Object.keys(oldManifest).length > 0) {
       const { backedUp, backupDir } = backupModifiedFiles(home, skillsDir, oldManifest);
       if (backedUp > 0) {
