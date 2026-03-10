@@ -6,7 +6,7 @@
     {
       "name": "orchestrator",
       "type": "skill",
-      "version": "3.0.0",
+      "version": "3.1.1",
       "description": "Autonomous planner/executor with self-healing and persistent learning",
       "path": ".claude/skills/orchestrator",
       "dependencies": [],
