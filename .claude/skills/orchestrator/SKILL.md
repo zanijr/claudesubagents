@@ -30,7 +30,7 @@ Recent failures: !`cat .claude/memory/failure-log.md 2>/dev/null | tail -20 || e
 
 ## Core Philosophy
 
-**Idea → Plan → Build → Test → Fail → Fix → Learn → Remember**
+**Idea → Plan → Build → Test → Fail → Fix → Review → Learn → Remember**
 
 Never stop at failure. Analyze it, try a different approach, and record what worked. Every run makes future runs smarter.
 
@@ -94,11 +94,31 @@ After all subtasks report success:
 1. **Run verification** — Execute the success criteria defined in Phase 1
 2. **Integration check** — If subtasks produce code, run tests/builds/linters
 3. **If verification fails** — Feed the failure back into Phase 4 (self-healing loop)
-4. **If verification passes** — Proceed to reporting
+4. **If verification passes** — Proceed to code review
 
 Do not skip verification. A subtask is not done until its success criteria pass.
 
-### Phase 6: Learn & Remember
+### Phase 6: Code Review
+
+After verification passes, dispatch the **Code Reviewer** agent to catch what automated checks miss.
+
+1. **Determine scope** — Collect all files created or modified by subtasks (track during dispatch or use `git diff --name-only`)
+2. **Skip if no code** — If the task only produced docs, config, or research, skip to Phase 7
+3. **Dispatch reviewer** — Send the Code Reviewer agent via Task tool:
+   - What was built and why
+   - List of files to review
+   - What success criteria already passed
+   - Project context (language, framework, available linters/tests)
+4. **Handle results**:
+   - **PASS** → Proceed to Phase 7
+   - **PASS WITH NOTES** → Proceed to Phase 7, include notes in report
+   - **FAIL (critical issues)** → Create fix subtasks for each critical issue and feed them into Phase 4 (self-healing). After fixes, re-verify (Phase 5) then re-review only the changed files.
+
+The review creates a **build → test → review → fix** feedback loop that runs until the code is clean or retries are exhausted.
+
+See [references/code-review.md](references/code-review.md) for the full code review protocol.
+
+### Phase 7: Learn & Remember
 
 After the task completes (success or partial failure):
 
@@ -116,11 +136,12 @@ After the task completes (success or partial failure):
 3. **Update failure log** — Mark resolved failures in `.claude/memory/failure-log.md`
 4. **Prune old entries** — Keep lessons-learned under 200 entries (remove oldest when exceeded)
 
-### Phase 7: Report
+### Phase 8: Report
 
 Summarize:
 - What was planned and what succeeded
 - What failed, why, and how it was fixed (self-healing stats)
+- Code review results (critical issues found and fixed, warnings, notes)
 - What partially completed (with continuation stats if context management active)
 - Agents created
 - Lessons learned this session
@@ -164,4 +185,5 @@ Memory is injected into every run via dynamic context injection (see Live Contex
 - [references/memory-protocol.md](references/memory-protocol.md) — Memory system details and pruning rules
 - [references/checkpoint-protocol.md](references/checkpoint-protocol.md) — Checkpoint protocol for context management
 - [references/continuation-loop.md](references/continuation-loop.md) — Continuation loop dispatch pseudocode
+- [references/code-review.md](references/code-review.md) — Code review protocol and severity handling
 - [references/agent-creation-template.md](references/agent-creation-template.md) — Template for auto-created agents
