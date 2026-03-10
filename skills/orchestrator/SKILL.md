@@ -10,11 +10,11 @@ hooks:
     - matcher: "Bash|Agent"
       hooks:
         - type: command
-          command: "bash ${CLAUDE_PLUGIN_ROOT}/skills/orchestrator/scripts/capture-failure.sh"
+          command: "bash ${CLAUDE_PLUGIN_ROOT}/scripts/capture-failure.sh"
   Stop:
     - hooks:
         - type: command
-          command: "bash ${CLAUDE_PLUGIN_ROOT}/skills/orchestrator/scripts/save-lessons.sh"
+          command: "bash ${CLAUDE_PLUGIN_ROOT}/scripts/save-lessons.sh"
 ---
 
 # Agent Orchestrator
