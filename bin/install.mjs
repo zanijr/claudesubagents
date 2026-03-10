@@ -4,10 +4,9 @@
 // Usage: node bin/install.mjs [--claude] [--global|--local] [--update]
 
 import { createInterface } from "node:readline";
-import { existsSync, mkdirSync, cpSync, writeFileSync, readFileSync, symlinkSync, unlinkSync, lstatSync, readdirSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, cpSync, writeFileSync, readFileSync, symlinkSync, unlinkSync, lstatSync, readdirSync, statSync, rmSync } from "node:fs";
 import { join, resolve, basename, dirname, relative } from "node:path";
 import { homedir } from "node:os";
-import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 
@@ -263,7 +262,7 @@ function installGlobal(home, { isUpdate = false } = {}) {
         if (stat.isSymbolicLink()) {
           unlinkSync(dest);
         } else {
-          execSync(`rm -rf "${dest}"`);
+          rmSync(dest, { recursive: true, force: true });
         }
       } catch {}
     }
@@ -278,7 +277,7 @@ function installGlobal(home, { isUpdate = false } = {}) {
   const updateSkillDest = join(skillsDir, "orchestrator-update");
   if (existsSync(updateSkillSrc)) {
     if (existsSync(updateSkillDest)) {
-      try { execSync(`rm -rf "${updateSkillDest}"`); } catch {}
+      try { rmSync(updateSkillDest, { recursive: true, force: true }); } catch {}
     }
     cpSync(updateSkillSrc, updateSkillDest, { recursive: true });
     ok(`Installed skill: ${c.bold("orchestrator:update")}`);
