@@ -146,7 +146,7 @@ You are an expert database administrator...
 
 ```json
 {
-    "version": "3.0.0",
+    "version": "3.1.1",
     "agentPaths": [".claude/agents/project"],
     "maxRetries": 2,
     "defaultModel": "sonnet",
