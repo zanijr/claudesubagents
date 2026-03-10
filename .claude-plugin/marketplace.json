@@ -1,0 +1,16 @@
+{
+  "name": "claudesubagents",
+  "owner": {
+    "name": "zanijr"
+  },
+  "plugins": [
+    {
+      "name": "agent-orchestrator",
+      "source": {
+        "source": "github",
+        "repo": "zanijr/claudesubagents"
+      },
+      "description": "Autonomous agent orchestrator with self-healing, code review, and persistent learning"
+    }
+  ]
+}

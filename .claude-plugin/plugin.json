@@ -1,0 +1,5 @@
+{
+  "name": "agent-orchestrator",
+  "description": "Autonomous planner, builder, and learner. Takes a goal, breaks it into subtasks, creates agents, dispatches work, self-heals on failure, reviews code, and remembers what it learned.",
+  "version": "3.0.0"
+}
