@@ -1,0 +1,14 @@
+{
+  "name": "agent-orchestrator",
+  "description": "Autonomous planner, builder, and learner. Takes a goal, breaks it into subtasks, creates agents, dispatches work, self-heals on failure, reviews code, and remembers what it learned.",
+  "version": "3.1.0",
+  "marketplace": true,
+  "install": {
+    "unix": "curl -fsSL https://raw.githubusercontent.com/zanijr/claudesubagents/main/scripts/get.sh | bash",
+    "windows": "git clone https://github.com/zanijr/claudesubagents.git %USERPROFILE%\\.claude\\orchestrator"
+  },
+  "update": {
+    "unix": "claude-market update",
+    "windows": "cd %USERPROFILE%\\.claude\\orchestrator && git pull --ff-only origin main"
+  }
+}

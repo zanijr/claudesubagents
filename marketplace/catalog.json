@@ -1,0 +1,34 @@
+{
+  "version": "1.0.0",
+  "repository": "zanijr/claudesubagents",
+  "description": "Official catalog for the Agent Orchestrator marketplace",
+  "packages": [
+    {
+      "name": "orchestrator",
+      "type": "skill",
+      "version": "3.0.0",
+      "description": "Autonomous planner/executor with self-healing and persistent learning",
+      "path": ".claude/skills/orchestrator",
+      "dependencies": [],
+      "tags": ["core", "planning", "execution", "self-healing", "memory"]
+    },
+    {
+      "name": "create-agent",
+      "type": "skill",
+      "version": "2.0.0",
+      "description": "Interactive agent creation wizard with guided questions",
+      "path": ".claude/skills/create-agent",
+      "dependencies": [],
+      "tags": ["core", "agent-creation", "wizard"]
+    },
+    {
+      "name": "code-reviewer",
+      "type": "agent",
+      "version": "1.0.0",
+      "description": "Post-verification code review for security, correctness, and performance",
+      "path": ".claude/agents/project/code-reviewer.md",
+      "dependencies": ["orchestrator"],
+      "tags": ["review", "security", "quality"]
+    }
+  ]
+}

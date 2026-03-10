@@ -27,29 +27,57 @@ User: "Check if my Docker containers are healthy"
 
 ## Installation
 
+One command — works on Linux, macOS, and WSL:
+
 ```bash
-# Clone into your Claude Code config
+curl -fsSL https://raw.githubusercontent.com/zanijr/claudesubagents/main/scripts/get.sh | bash
+```
+
+This clones the repo, symlinks skills into `~/.claude/skills/`, and installs the `claude-market` CLI.
+
+### Manual Install
+
+```bash
 git clone https://github.com/zanijr/claudesubagents.git ~/.claude/orchestrator
+bash ~/.claude/orchestrator/scripts/marketplace.sh install
+```
 
-# Run the install script
-bash ~/.claude/orchestrator/scripts/install.sh
+### Windows
 
-# Or do it manually:
-# Create skill symlinks
-ln -s ~/.claude/orchestrator/.claude/skills/orchestrator ~/.claude/skills/orchestrator
-ln -s ~/.claude/orchestrator/.claude/skills/create-agent ~/.claude/skills/create-agent
+```bash
+git clone https://github.com/zanijr/claudesubagents.git %USERPROFILE%\.claude\orchestrator
+node %USERPROFILE%\.claude\orchestrator\bin\install.mjs --claude --global
+```
 
-# Create the agent directory in your project
-mkdir -p .claude/agents/project
+### Project Setup
 
-# Create checkpoint directory
-mkdir -p .claude/context/checkpoints
+After installing, set up each project:
 
-# Copy the config template (optional)
-cp ~/.claude/orchestrator/templates/orchestrator.config.json ./orchestrator.config.json
+```bash
+cd my-project
+claude-market setup
+```
 
-# Copy the agent template (optional)
-cp ~/.claude/orchestrator/templates/new-agent.md .claude/agents/project/_template.md
+This creates the agent directory, checkpoint directory, copies templates, and updates `.gitignore`.
+
+### Updating
+
+From inside Claude Code:
+
+```
+/orchestrator:update
+```
+
+Or from the terminal:
+
+```bash
+claude-market update
+```
+
+Or manually:
+
+```bash
+cd ~/.claude/orchestrator && git pull
 ```
 
 ## Usage

@@ -1,28 +1,45 @@
 # Agent Orchestrator Framework
 
-Autonomous planner and executor that breaks goals into subtasks, creates any missing agents, and dispatches everything via the **Task tool** without user intervention.
+Autonomous planner, builder, and learner. Takes a goal, breaks it into subtasks, creates agents, dispatches work, self-heals on failure, and remembers what it learned — all via the **Task tool** without user intervention.
 
 ## How It Works
 
-1. User describes a goal (e.g., `/orchestrator set up monitoring for my Docker stack`)
-2. Orchestrator plans: decomposes goal into subtasks with required capabilities
-3. Matches subtasks to existing agents from `.claude/agents/project/*.md`
-4. Auto-creates new agents for any unmatched subtasks
-5. Dispatches all subtasks via the **Task tool** (parallel when independent)
-6. **Context management**: agents checkpoint progress and get re-dispatched automatically if they run out of context
-7. Reports results: what succeeded, what failed, what agents were created
+1. User describes an idea (e.g., `/orchestrator set up monitoring for my Docker stack`)
+2. Orchestrator checks **lessons learned** from past runs for relevant knowledge
+3. Plans: decomposes goal into subtasks with **success criteria**
+4. Matches subtasks to agents from `.claude/agents/project/*.md`, auto-creates missing ones
+5. Dispatches all subtasks via **Task tool** (parallel when independent)
+6. **Self-heals**: when subtasks fail, analyzes the error, adapts strategy, retries
+7. **Verifies**: runs success criteria checks after subtasks complete
+8. **Learns**: writes lessons to `.claude/memory/lessons-learned.md` for future runs
+9. Reports: what succeeded, what failed, what was learned
 
-## Skills
+## Skills (2.0)
+
+Both skills use Skills 2.0 format with YAML frontmatter, dynamic context injection (`!`command``), progressive disclosure via `references/`, lifecycle hooks, and argument support.
 
 ### orchestrator
-Autonomous planner/executor. Plans, matches/creates agents, dispatches, reports.
+Autonomous planner/executor with self-healing and learning.
 
-**Trigger:** `/orchestrator`, "orchestrate this", "plan and execute", "list agents"
+**Trigger:** `/orchestrator`, "orchestrate a task", "plan and execute this", "build this for me", "list agents"
+
+**Features:**
+- Dynamic context injection: live agent list, config, lessons learned, recent failures
+- Self-healing: error analysis → adapt strategy → retry (not blind retries)
+- Persistent memory: lessons learned survive across sessions
+- Lifecycle hooks: `PostToolUseFailure` captures failures, `Stop` prunes memory
+- Progressive disclosure: heavy content in `references/`
+- Argument support: `/orchestrator [goal]`
 
 ### create-agent
-Manual agent creation with guided questions. Use when you want to create a single agent interactively.
+Interactive agent creation with guided questions.
 
-**Trigger:** "create an agent for X", "make a new agent"
+**Trigger:** `/create-agent`, "create an agent for X", "make a new agent"
+
+**Features:**
+- Dynamic context injection for existing agent list
+- Argument support: `/create-agent [agent purpose]`
+- Agent template in `references/agent-template.md`
 
 ## Agent Format
 
@@ -44,33 +61,46 @@ model: sonnet
 
 The `name` field must match the Task tool's `subagent_type`. The body contains agent instructions.
 
+## Memory System
+
+The orchestrator maintains persistent knowledge in `.claude/memory/`:
+
+| File | Purpose | Injected At |
+|------|---------|-------------|
+| `lessons-learned.md` | What worked, what failed, actionable advice | Start of every run |
+| `failure-log.md` | Raw failure records for pattern detection | Start of every run |
+
+Memory is injected via `!`cat .claude/memory/lessons-learned.md`` — the orchestrator sees past knowledge before it starts planning.
+
+## Self-Healing
+
+When a subtask fails, the orchestrator:
+1. **Captures** the error and environment state
+2. **Classifies** root cause (code bug, wrong approach, missing dep, etc.)
+3. **Adapts** strategy (fix and retry, try different agent, decompose, apply known fix)
+4. **Retries** with the adapted approach
+5. **Records** what worked for future reference
+
+Never stops at first failure. Analyzes, adapts, learns.
+
 ## Context Management
 
-When `contextManagement.enabled` is `true` in config, the orchestrator automatically manages agent context windows:
+When `contextManagement.enabled` is `true` in config:
 
-- **Checkpoints**: Agents write structured checkpoint files at regular intervals, capturing completed work, remaining work, decisions made, and the next action to take
-- **Continuation loop**: When an agent signals `NEEDS_CONTINUATION: true` (or runs out of turns), the orchestrator reads the checkpoint and re-dispatches a fresh agent with that context
-- **Transparent**: Agents receive a `Checkpoint Protocol` block in their prompt that tells them how to participate
-- **Bounded**: Each subtask gets up to `maxContinuations` re-dispatches (default 5), preventing infinite loops
-- **Opt-out**: Set `contextManagement.enabled: false` in config to restore stateless behavior
-
-### How Agents Participate
-
-Agents don't need special code. When context management is active, the orchestrator injects a `Checkpoint Protocol` section into the agent's prompt at dispatch time. This tells the agent to:
-
-1. Track turn count
-2. Write checkpoints every N turns to a specific file path
-3. Use the structured checkpoint format (completed work, remaining work, decisions, next action)
-4. Signal `NEEDS_CONTINUATION: true/false` in their final response
-
-The agent template (`templates/new-agent.md`) includes a `Context Management` section so agents understand this pattern.
+- **Checkpoints**: Agents write structured progress at regular intervals
+- **Continuation loop**: Agents get re-dispatched with checkpoint context when they run out of turns
+- **Bounded**: Up to `maxContinuations` re-dispatches per subtask (default 5)
+- **Opt-out**: Set `contextManagement.enabled: false` in config
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `.claude/skills/orchestrator/SKILL.md` | Autonomous planner/executor with continuation loop |
-| `.claude/skills/create-agent/SKILL.md` | Manual agent creation |
-| `templates/new-agent.md` | Agent template (includes context management section) |
-| `templates/orchestrator.config.json` | Config template (includes contextManagement settings) |
-| `templates/checkpoint.md` | Checkpoint file format reference |
+| `.claude/skills/orchestrator/SKILL.md` | Autonomous planner/executor (Skills 2.0) |
+| `.claude/skills/orchestrator/references/` | Self-healing, memory, checkpoint, continuation protocols |
+| `.claude/skills/orchestrator/scripts/` | Lifecycle hooks (capture-failure, save-lessons) |
+| `.claude/skills/create-agent/SKILL.md` | Interactive agent creation (Skills 2.0) |
+| `.claude/skills/create-agent/references/` | Agent file template |
+| `.claude/memory/` | Persistent lessons learned and failure log |
+| `templates/orchestrator.config.json` | Config template |
+| `templates/new-agent.md` | Agent template |
