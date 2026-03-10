@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Agent Orchestrator — Interactive Installer
-// Usage: npx agent-orchestrator-cc@latest
+// Usage: node bin/install.mjs [--claude] [--global|--local] [--update]
 
 import { createInterface } from "node:readline";
 import { existsSync, mkdirSync, cpSync, writeFileSync, readFileSync, symlinkSync, unlinkSync, lstatSync, readdirSync, statSync } from "node:fs";
@@ -196,12 +196,12 @@ async function main() {
   if (scope === "global") {
     console.log(`  Next steps:`);
     console.log(`    ${c.cyan("cd your-project")}`);
-    console.log(`    ${c.cyan("npx agent-orchestrator-cc@latest")} and choose ${c.bold("Local")} to set up the project`);
+    console.log(`    ${c.cyan("claude-market setup")} to set up the project`);
   }
   console.log(`    Then in Claude Code: ${c.cyan("/orchestrator build me a ...")}`);
   console.log("");
   console.log(`  To update later: ${c.cyan("/orchestrator:update")} in Claude Code`);
-  console.log(`  Or run: ${c.cyan("npx agent-orchestrator-cc@latest")}`);
+  console.log(`  Or run: ${c.cyan("claude-market update")}`);
   console.log("");
 }
 

@@ -27,23 +27,35 @@ User: "Check if my Docker containers are healthy"
 
 ## Installation
 
-One command — works on Linux, macOS, WSL, and Windows (with Node.js):
+One command — works on Linux, macOS, and WSL:
 
 ```bash
-npx agent-orchestrator-cc@latest
+curl -fsSL https://raw.githubusercontent.com/zanijr/claudesubagents/main/scripts/get.sh | bash
 ```
 
-The installer will ask you:
-1. **Runtime** — pick Claude Code
-2. **Scope** — Global (all projects) or Local (current project only)
+This clones the repo, symlinks skills into `~/.claude/skills/`, and installs the `claude-market` CLI.
+
+### Manual Install
+
+```bash
+git clone https://github.com/zanijr/claudesubagents.git ~/.claude/orchestrator
+bash ~/.claude/orchestrator/scripts/marketplace.sh install
+```
+
+### Windows
+
+```bash
+git clone https://github.com/zanijr/claudesubagents.git %USERPROFILE%\.claude\orchestrator
+node %USERPROFILE%\.claude\orchestrator\bin\install.mjs --claude --global
+```
 
 ### Project Setup
 
-After installing globally, set up each project:
+After installing, set up each project:
 
 ```bash
 cd my-project
-npx agent-orchestrator-cc@latest    # choose "Local"
+claude-market setup
 ```
 
 This creates the agent directory, checkpoint directory, copies templates, and updates `.gitignore`.
@@ -59,27 +71,14 @@ From inside Claude Code:
 Or from the terminal:
 
 ```bash
-npx agent-orchestrator-cc@latest --update
+claude-market update
 ```
 
-### Alternative Install Methods
-
-<details>
-<summary>curl one-liner (Linux / macOS / WSL)</summary>
+Or manually:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/zanijr/claudesubagents/main/scripts/get.sh | bash
+cd ~/.claude/orchestrator && git pull
 ```
-</details>
-
-<details>
-<summary>Manual install</summary>
-
-```bash
-git clone https://github.com/zanijr/claudesubagents.git ~/.claude/orchestrator
-bash ~/.claude/orchestrator/scripts/marketplace.sh install
-```
-</details>
 
 ## Usage
 

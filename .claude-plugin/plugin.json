@@ -4,11 +4,11 @@
   "version": "3.1.0",
   "marketplace": true,
   "install": {
-    "unix": "npx agent-orchestrator-cc@latest",
-    "windows": "npx agent-orchestrator-cc@latest"
+    "unix": "curl -fsSL https://raw.githubusercontent.com/zanijr/claudesubagents/main/scripts/get.sh | bash",
+    "windows": "git clone https://github.com/zanijr/claudesubagents.git %USERPROFILE%\\.claude\\orchestrator"
   },
   "update": {
-    "unix": "npx agent-orchestrator-cc@latest --update",
-    "windows": "npx agent-orchestrator-cc@latest --update"
+    "unix": "claude-market update",
+    "windows": "cd %USERPROFILE%\\.claude\\orchestrator && git pull --ff-only origin main"
   }
 }
