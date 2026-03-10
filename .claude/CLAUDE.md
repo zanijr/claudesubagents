@@ -12,17 +12,29 @@ Autonomous planner and executor that breaks goals into subtasks, creates any mis
 6. **Context management**: agents checkpoint progress and get re-dispatched automatically if they run out of context
 7. Reports results: what succeeded, what failed, what agents were created
 
-## Skills
+## Skills (2.0)
+
+Both skills use the Skills 2.0 format with YAML frontmatter, dynamic context injection (`!`command``), progressive disclosure via `references/` directories, and argument support.
 
 ### orchestrator
 Autonomous planner/executor. Plans, matches/creates agents, dispatches, reports.
 
-**Trigger:** `/orchestrator`, "orchestrate this", "plan and execute", "list agents"
+**Trigger:** `/orchestrator`, "orchestrate a task", "plan and execute this", "have agents do this", "list agents"
+
+**Features:**
+- Dynamic context injection for live agent list and config
+- Progressive disclosure: heavy content (checkpoint protocol, continuation loop) in `references/`
+- Argument support: `/orchestrator [goal]`
 
 ### create-agent
-Manual agent creation with guided questions. Use when you want to create a single agent interactively.
+Interactive agent creation with guided questions.
 
-**Trigger:** "create an agent for X", "make a new agent"
+**Trigger:** `/create-agent`, "create an agent for X", "make a new agent"
+
+**Features:**
+- Dynamic context injection for existing agent list
+- Argument support: `/create-agent [agent purpose]`
+- Agent template in `references/agent-template.md`
 
 ## Agent Format
 
@@ -69,8 +81,10 @@ The agent template (`templates/new-agent.md`) includes a `Context Management` se
 
 | File | Purpose |
 |------|---------|
-| `.claude/skills/orchestrator/SKILL.md` | Autonomous planner/executor with continuation loop |
-| `.claude/skills/create-agent/SKILL.md` | Manual agent creation |
+| `.claude/skills/orchestrator/SKILL.md` | Autonomous planner/executor (Skills 2.0) |
+| `.claude/skills/orchestrator/references/` | Checkpoint protocol, continuation loop, agent template |
+| `.claude/skills/create-agent/SKILL.md` | Interactive agent creation (Skills 2.0) |
+| `.claude/skills/create-agent/references/` | Agent file template |
 | `templates/new-agent.md` | Agent template (includes context management section) |
 | `templates/orchestrator.config.json` | Config template (includes contextManagement settings) |
 | `templates/checkpoint.md` | Checkpoint file format reference |
