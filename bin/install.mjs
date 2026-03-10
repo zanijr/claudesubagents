@@ -4,11 +4,12 @@
 // Usage: npx agent-orchestrator-cc@latest
 
 import { createInterface } from "node:readline";
-import { existsSync, mkdirSync, cpSync, writeFileSync, readFileSync, symlinkSync, unlinkSync, lstatSync, readdirSync } from "node:fs";
-import { join, resolve, basename, dirname } from "node:path";
+import { existsSync, mkdirSync, cpSync, writeFileSync, readFileSync, symlinkSync, unlinkSync, lstatSync, readdirSync, statSync } from "node:fs";
+import { join, resolve, basename, dirname, relative } from "node:path";
 import { homedir } from "node:os";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -64,6 +65,74 @@ try {
   const pkg = JSON.parse(readFileSync(join(PKG_ROOT, "package.json"), "utf8"));
   version = pkg.version;
 } catch {}
+
+// ── Manifest (SHA256 file tracking) ─────────────────────────────────────────
+function hashFile(filePath) {
+  const content = readFileSync(filePath);
+  return createHash("sha256").update(content).digest("hex");
+}
+
+function collectFiles(dir, base = dir) {
+  const entries = [];
+  if (!existsSync(dir)) return entries;
+  for (const item of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, item.name);
+    if (item.isDirectory()) {
+      entries.push(...collectFiles(full, base));
+    } else {
+      entries.push(relative(base, full));
+    }
+  }
+  return entries;
+}
+
+function buildManifest(dir) {
+  const manifest = {};
+  for (const rel of collectFiles(dir)) {
+    manifest[rel] = hashFile(join(dir, rel));
+  }
+  return manifest;
+}
+
+function getManifestPath(home) {
+  return join(home, ".claude", ".orchestrator-manifest.json");
+}
+
+function loadManifest(home) {
+  const manifestPath = getManifestPath(home);
+  if (existsSync(manifestPath)) {
+    try { return JSON.parse(readFileSync(manifestPath, "utf8")); } catch {}
+  }
+  return {};
+}
+
+function saveManifest(home, manifest) {
+  const manifestPath = getManifestPath(home);
+  mkdirSync(dirname(manifestPath), { recursive: true });
+  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
+}
+
+function backupModifiedFiles(home, skillsDir, oldManifest) {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  const backupDir = join(home, ".claude", ".orchestrator-backups", timestamp);
+  let backedUp = 0;
+
+  for (const [rel, expectedHash] of Object.entries(oldManifest)) {
+    const installed = join(skillsDir, rel);
+    if (!existsSync(installed)) continue;
+
+    const currentHash = hashFile(installed);
+    if (currentHash !== expectedHash) {
+      // User modified this file — back it up
+      const backupPath = join(backupDir, rel);
+      mkdirSync(dirname(backupPath), { recursive: true });
+      cpSync(installed, backupPath);
+      backedUp++;
+    }
+  }
+
+  return { backedUp, backupDir };
+}
 
 // ── Main ────────────────────────────────────────────────────────────────────
 async function main() {
@@ -136,14 +205,26 @@ async function main() {
   console.log("");
 }
 
-// ── Global install: link skills into ~/.claude/skills/ ──────────────────────
-function installGlobal(home) {
+// ── Global install: copy skills into ~/.claude/skills/ ──────────────────────
+function installGlobal(home, { isUpdate = false } = {}) {
   const skillsDir = join(home, ".claude", "skills");
   mkdirSync(skillsDir, { recursive: true });
 
   const sourceSkillsDir = join(PKG_ROOT, "skills");
   if (!existsSync(sourceSkillsDir)) {
     fail(`Skills directory not found at ${sourceSkillsDir}`);
+  }
+
+  // On update: check for user-modified files and back them up
+  if (isUpdate) {
+    const oldManifest = loadManifest(home);
+    if (Object.keys(oldManifest).length > 0) {
+      const { backedUp, backupDir } = backupModifiedFiles(home, skillsDir, oldManifest);
+      if (backedUp > 0) {
+        warn(`Backed up ${backedUp} modified file${backedUp > 1 ? "s" : ""} to:`);
+        info(c.dim(backupDir));
+      }
+    }
   }
 
   // Copy each skill
@@ -178,6 +259,11 @@ function installGlobal(home) {
     cpSync(updateSkillSrc, updateSkillDest, { recursive: true });
     ok(`Installed skill: ${c.bold("orchestrator:update")}`);
   }
+
+  // Build and save manifest of all installed files
+  const manifest = buildManifest(skillsDir);
+  saveManifest(home, manifest);
+  ok(`Tracked ${Object.keys(manifest).length} files in manifest`);
 }
 
 // ── Local install: set up the current project ───────────────────────────────
@@ -269,7 +355,7 @@ function runUpdate() {
   }
 
   info("Updating skills...");
-  installGlobal(home);
+  installGlobal(home, { isUpdate: true });
 
   writeFileSync(versionFile, version + "\n");
 
