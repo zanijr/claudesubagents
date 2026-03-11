@@ -92,7 +92,7 @@ When a failure occurs, check lessons for:
 - Agent-specific notes → switch to a better agent
 - Framework-specific gotchas → adjust subtask description
 
-### After Completion (Phase 6)
+### After Completion (Phase 7)
 
 Always append new lessons, even on success. Success lessons are just as valuable — they document what works.
 
@@ -123,11 +123,11 @@ On first run (no memory files exist):
    Raw failure records for pattern detection. Auto-pruned to last 100 entries.
    ```
 
-## .gitignore Considerations
+## Sharing Memory (Team Knowledge)
 
-Add to `.gitignore` if memory should be local-only:
-```
-.claude/memory/
-```
+Memory is committed to the repo by default (not gitignored). This means:
+- Lessons learned are shared across all team members
+- New team members benefit from past runs immediately
+- The orchestrator gets smarter for everyone, not just one person
 
-Or commit it to share lessons across team members. Both are valid — depends on whether the lessons are project-specific or machine-specific.
+If you want local-only memory, add `.claude/memory/` to your `.gitignore`.

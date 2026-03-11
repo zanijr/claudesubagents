@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-version: 3.1.2
+version: 3.2.0
 description: This skill should be used when the user asks to "orchestrate a task", "plan and execute this", "have agents do this", "build this for me", "break this into subtasks", "list agents", or needs autonomous multi-agent task decomposition, execution, self-healing, and learning.
 user-invocable: true
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite, Agent
@@ -30,7 +30,7 @@ Recent failures: !`cat .claude/memory/failure-log.md 2>/dev/null | tail -20 || e
 
 ## Core Philosophy
 
-**Idea → Plan → Build → Test → Fail → Fix → Review → Learn → Remember**
+**Idea → Plan → Build → Verify → Review → Reroute (if needed) → Fix → Re-verify → Learn → Remember**
 
 Never stop at failure. Analyze it, try a different approach, and record what worked. Every run makes future runs smarter.
 
@@ -62,14 +62,18 @@ See [references/agent-creation-template.md](references/agent-creation-template.m
 Read `orchestrator.config.json` for context management settings.
 
 If `contextManagement.enabled` is `true` (default):
-- Generate a `taskRunId`
-- Create checkpoint directory
-- Inject Checkpoint Protocol into agent prompts
+- Generate a `taskRunId` (e.g., `run-{timestamp}`)
+- Create checkpoint directory: `.claude/context/checkpoints/`
+- Inject Checkpoint Protocol into every agent prompt (see [references/checkpoint-protocol.md](references/checkpoint-protocol.md))
 
-See [references/checkpoint-protocol.md](references/checkpoint-protocol.md) for protocol details.
-See [references/continuation-loop.md](references/continuation-loop.md) for dispatch pseudocode.
+**Dispatch** independent subtasks **in parallel** via multiple Agent tool calls. Only sequence subtasks with dependencies.
 
-Dispatch independent subtasks **in parallel** via multiple Agent tool calls. Only sequence subtasks with dependencies.
+**Continuation handling** — after each agent returns, check the result:
+1. If result contains `NEEDS_CONTINUATION: true` → read the checkpoint file at `.claude/context/checkpoints/{taskRunId}-{subtaskNumber}.md`, then re-dispatch the same agent with the checkpoint context injected (see [references/continuation-loop.md](references/continuation-loop.md) for the full loop)
+2. If result contains `NEEDS_CONTINUATION: false` or no signal → agent is done, clean up checkpoint file, proceed to verify-and-reroute gate
+3. Repeat up to `maxContinuations` (default 5) re-dispatches per subtask
+
+**After each agent completes** (including after continuations), immediately run the **verify-and-reroute gate** (Phase 5) on that subtask before dispatching any dependent subtasks. Do NOT wait for all subtasks to finish before verifying.
 
 ### Phase 4: Self-Healing Loop
 
@@ -87,36 +91,44 @@ When a subtask fails, do NOT just retry blindly. Follow the self-healing protoco
 
 See [references/self-healing.md](references/self-healing.md) for the full self-healing protocol.
 
-### Phase 5: Verify
+### Phase 5: Verify-and-Reroute Gate (Per Subtask)
 
-After all subtasks report success:
+This gate fires **per subtask**, immediately after each agent completes — not at the end. This catches issues early before downstream subtasks build on broken work.
 
-1. **Run verification** — Execute the success criteria defined in Phase 1
-2. **Integration check** — If subtasks produce code, run tests/builds/linters
-3. **If verification fails** — Feed the failure back into Phase 4 (self-healing loop)
-4. **If verification passes** — Proceed to code review
+**Skip** for subtasks that only produce docs, config, or research (no code output).
 
-Do not skip verification. A subtask is not done until its success criteria pass.
+For each completed code subtask:
 
-### Phase 6: Code Review
-
-After verification passes, dispatch the **Code Reviewer** agent to catch what automated checks miss.
-
-1. **Determine scope** — Collect all files created or modified by subtasks (track during dispatch or use `git diff --name-only`)
-2. **Skip if no code** — If the task only produced docs, config, or research, skip to Phase 7
-3. **Dispatch reviewer** — Send the Code Reviewer agent via Agent tool:
+1. **Run success criteria** — Execute the subtask's success criteria from Phase 1 (tests, build, linter)
+2. **Dispatch Code Reviewer** — Send the Code Reviewer agent to review that subtask's files:
    - What was built and why
-   - List of files to review
-   - What success criteria already passed
-   - Project context (language, framework, available linters/tests)
-4. **Handle results**:
-   - **PASS** → Proceed to Phase 7
-   - **PASS WITH NOTES** → Proceed to Phase 7, include notes in report
-   - **FAIL (critical issues)** → Create fix subtasks for each critical issue and feed them into Phase 4 (self-healing). After fixes, re-verify (Phase 5) then re-review only the changed files.
+   - Files created/modified (from agent result or `git diff --name-only`)
+   - Which success criteria passed
+   - Project context (language, framework, tests, linter)
+3. **Handle result**:
+   - **PASS** → Mark subtask complete, proceed to next subtask or Phase 7
+   - **PASS WITH NOTES** → Mark complete, record notes for report
+   - **FAIL (critical issues)** → **Reroute** to the original agent:
+     - Re-dispatch the **same agent** with the review feedback injected
+     - Agent fixes ALL critical issues
+     - Re-run success criteria + re-review only changed files
+     - Loop until PASS or `maxRetries` exhausted (default: 2 reroute attempts)
+4. **Post-fix regression test** — After any critical issue is fixed via reroute, dispatch the **Test Engineer** agent to write a regression test for the specific bug that was caught. This ensures the same bug never passes review again.
+5. **If retries exhausted** — Mark subtask as partially complete, record unresolved issues, continue with other subtasks
 
-The review creates a **build → test → review → fix** feedback loop that runs until the code is clean or retries are exhausted.
+See [references/verify-and-reroute.md](references/verify-and-reroute.md) for the full protocol.
+See [references/code-review.md](references/code-review.md) for review dispatch format.
 
-See [references/code-review.md](references/code-review.md) for the full code review protocol.
+### Phase 6: Final Integration Check
+
+After ALL subtasks pass their individual verify-and-reroute gates:
+
+1. **Run full test suite** — All tests, not just per-subtask tests
+2. **Run build** — Ensure the full project compiles/builds
+3. **If failures** — Feed back into Phase 4 (self-healing) with integration context
+4. **If passes** — Proceed to Phase 7
+
+This is a lightweight final pass — most issues should already be caught per-subtask in Phase 5.
 
 ### Phase 7: Learn & Remember
 
@@ -181,6 +193,7 @@ Memory is injected into every run via dynamic context injection (see Live Contex
 
 ## Additional Resources
 
+- [references/verify-and-reroute.md](references/verify-and-reroute.md) — Per-subtask quality gate with automatic reroute loop
 - [references/self-healing.md](references/self-healing.md) — Full self-healing protocol with error analysis patterns
 - [references/memory-protocol.md](references/memory-protocol.md) — Memory system details and pruning rules
 - [references/checkpoint-protocol.md](references/checkpoint-protocol.md) — Checkpoint protocol for context management
