@@ -1,7 +1,7 @@
 {
-    "version": "4.0.0",
+    "version": "3.1.1",
     "agentPaths": [".claude/agents/project"],
-    "maxRetries": 3,
+    "maxRetries": 2,
     "defaultModel": "sonnet",
     "contextManagement": {
         "enabled": true,
@@ -18,7 +18,7 @@
     },
     "selfHealing": {
         "enabled": true,
-        "maxRetriesPerSubtask": 3,
+        "maxRetriesPerSubtask": 2,
         "strategies": ["fix-and-retry", "different-agent", "decompose", "apply-known-fix"],
         "verifyAfterFix": true
     }
