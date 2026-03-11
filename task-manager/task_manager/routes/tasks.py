@@ -58,9 +58,16 @@ def get_task(task_id: int):
 
 @router.put("/tasks/{task_id}", response_model=TaskResponse)
 def update_task(task_id: int, updates: TaskUpdate):
-    # Build update dict from non-None fields
+    # Non-nullable columns — reject explicit null for these
+    non_nullable = ("title", "project_id", "priority", "status")
+
+    # Build update dict from set fields
     fields = {}
     for field_name, value in updates.model_dump(exclude_unset=True).items():
+        if value is None and field_name in non_nullable:
+            raise HTTPException(
+                status_code=422, detail=f"Field '{field_name}' cannot be null"
+            )
         if value is not None or field_name in updates.model_fields_set:
             if field_name == "due_date" and value is not None:
                 fields[field_name] = value.isoformat()

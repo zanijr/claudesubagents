@@ -6,6 +6,10 @@ import json
 from fastapi import APIRouter, HTTPException, Query, UploadFile, File
 from fastapi.responses import Response
 from . import database as db
+from .models import Priority, Status
+
+VALID_PRIORITIES = {e.value for e in Priority}
+VALID_STATUSES = {e.value for e in Status}
 
 router = APIRouter()
 
@@ -89,12 +93,21 @@ async def import_data(
                 skipped_tasks += 1
                 continue
 
+            priority = t.get("priority", "medium")
+            status = t.get("status", "todo")
+            if priority not in VALID_PRIORITIES:
+                skipped_tasks += 1
+                continue
+            if status not in VALID_STATUSES:
+                skipped_tasks += 1
+                continue
+
             db.create_task(
                 project_id=project_id,
                 title=t["title"],
                 description=t.get("description"),
-                priority=t.get("priority", "medium"),
-                status=t.get("status", "todo"),
+                priority=priority,
+                status=status,
                 due_date=t.get("due_date"),
                 assigned_to=t.get("assigned_to"),
             )
@@ -125,12 +138,21 @@ async def import_data(
                 skipped_tasks += 1
                 continue
 
+            priority = row.get("priority", "medium") or "medium"
+            status = row.get("status", "todo") or "todo"
+            if priority not in VALID_PRIORITIES:
+                skipped_tasks += 1
+                continue
+            if status not in VALID_STATUSES:
+                skipped_tasks += 1
+                continue
+
             db.create_task(
                 project_id=project["id"],
                 title=title,
                 description=row.get("description") or None,
-                priority=row.get("priority", "medium") or "medium",
-                status=row.get("status", "todo") or "todo",
+                priority=priority,
+                status=status,
                 due_date=row.get("due_date") or None,
                 assigned_to=row.get("assigned_to") or None,
             )
