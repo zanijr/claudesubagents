@@ -9,7 +9,7 @@ argument-hint: [agent purpose]
 
 # Create Agent
 
-Create a new agent as a `.md` file in `.claude/agents/project/`. The agent becomes immediately available for dispatch via the Task tool.
+Create a new agent as a `.md` file in `.claude/agents/project/`. The agent becomes immediately available for dispatch via the Agent tool.
 
 ## Existing Agents
 
@@ -21,7 +21,7 @@ Create a new agent as a `.md` file in `.claude/agents/project/`. The agent becom
 
 Ask the user these questions using the AskUserQuestion tool:
 
-1. **Agent Name** — Title Case with spaces (e.g., "Database Management Agent"). Becomes the `name` field and `subagent_type` for the Task tool.
+1. **Agent Name** — Title Case with spaces (e.g., "Database Management Agent"). Becomes the `name` field and `subagent_type` for the Agent tool.
 2. **Purpose** — What it specializes in, what problems it solves.
 3. **Capabilities** — Task types it handles (e.g., `code-review`, `testing`, `database`, `security`).
 4. **Trigger Words** — Keywords for routing (e.g., `nfc`, `dashboard`, `sql`).

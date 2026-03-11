@@ -10,7 +10,7 @@ After verification passes (Phase 5), the orchestrator dispatches a code review b
 
 ## Dispatch
 
-Dispatch the **Code Reviewer** agent via Task tool with this prompt structure:
+Dispatch the **Code Reviewer** agent via Agent tool with this prompt structure:
 
 ```
 Review the code produced by the following subtasks:

@@ -69,7 +69,7 @@ If `contextManagement.enabled` is `true` (default):
 See [references/checkpoint-protocol.md](references/checkpoint-protocol.md) for protocol details.
 See [references/continuation-loop.md](references/continuation-loop.md) for dispatch pseudocode.
 
-Dispatch independent subtasks **in parallel** via multiple Task tool calls. Only sequence subtasks with dependencies.
+Dispatch independent subtasks **in parallel** via multiple Agent tool calls. Only sequence subtasks with dependencies.
 
 ### Phase 4: Self-Healing Loop
 
@@ -104,7 +104,7 @@ After verification passes, dispatch the **Code Reviewer** agent to catch what au
 
 1. **Determine scope** — Collect all files created or modified by subtasks (track during dispatch or use `git diff --name-only`)
 2. **Skip if no code** — If the task only produced docs, config, or research, skip to Phase 7
-3. **Dispatch reviewer** — Send the Code Reviewer agent via Task tool:
+3. **Dispatch reviewer** — Send the Code Reviewer agent via Agent tool:
    - What was built and why
    - List of files to review
    - What success criteria already passed
@@ -174,7 +174,7 @@ Memory is injected into every run via dynamic context injection (see Live Contex
 - **Be verifiable.** Define success criteria upfront and check them.
 - **Be a learner.** Every run produces knowledge for future runs.
 - **Be transparent.** Show the plan, show failures, show fixes, show lessons.
-- Always use the **Task tool** for dispatch.
+- Always use the **Agent tool** for dispatch.
 - The `subagent_type` must match the agent's `name` field exactly.
 - Clean up checkpoint files after successful completion.
 - Never delete or overwrite lessons-learned — only append.

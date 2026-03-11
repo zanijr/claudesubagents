@@ -1,6 +1,6 @@
 # Agent Orchestrator Framework
 
-Autonomous planner, builder, and learner. Takes a goal, breaks it into subtasks, creates agents, dispatches work, self-heals on failure, and remembers what it learned — all via the **Task tool** without user intervention.
+Autonomous planner, builder, and learner. Takes a goal, breaks it into subtasks, creates agents, dispatches work, self-heals on failure, and remembers what it learned — all via the **Agent tool** without user intervention.
 
 ## How It Works
 
@@ -8,7 +8,7 @@ Autonomous planner, builder, and learner. Takes a goal, breaks it into subtasks,
 2. Orchestrator checks **lessons learned** from past runs for relevant knowledge
 3. Plans: decomposes goal into subtasks with **success criteria**
 4. Matches subtasks to agents from `.claude/agents/project/*.md`, auto-creates missing ones
-5. Dispatches all subtasks via **Task tool** (parallel when independent)
+5. Dispatches all subtasks via **Agent tool** (parallel when independent)
 6. **Self-heals**: when subtasks fail, analyzes the error, adapts strategy, retries
 7. **Verifies**: runs success criteria checks after subtasks complete
 8. **Learns**: writes lessons to `.claude/memory/lessons-learned.md` for future runs
@@ -59,7 +59,7 @@ model: sonnet
 ---
 ```
 
-The `name` field must match the Task tool's `subagent_type`. The body contains agent instructions.
+The `name` field must match the Agent tool's `subagent_type`. The body contains agent instructions.
 
 ## Memory System
 
