@@ -44,7 +44,17 @@ if [ -d "$INSTALL_DIR/.git" ]; then
     warn "Already installed at $INSTALL_DIR"
     info "Updating instead..."
     cd "$INSTALL_DIR"
-    git pull --ff-only origin main
+    # Ensure we're on main
+    current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    if [ "$current_branch" != "main" ]; then
+        git checkout main 2>/dev/null
+    fi
+    git fetch origin main
+    # Try fast-forward, fall back to reset if diverged
+    if ! git pull --ff-only origin main 2>/dev/null; then
+        warn "Local branch diverged. Resetting to origin/main..."
+        git reset --hard origin/main
+    fi
     success "Updated to latest!"
 else
     info "Cloning repository..."

@@ -198,12 +198,22 @@ cmd_update() {
         stashed=1
     fi
 
-    # Pull with retries
+    # Ensure we're on main branch
+    local current_branch
+    current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    if [ "$current_branch" != "main" ]; then
+        print_info "Switching to main branch..."
+        git checkout main 2>&1 | sed 's/^/    /'
+    fi
+
+    # Fetch with retries
     before=$(git rev-parse HEAD)
     local retries=0
     local delay=2
+    local fetch_ok=0
     while [ $retries -lt 4 ]; do
-        if git pull --ff-only origin main 2>&1 | sed 's/^/    /'; then
+        if git fetch origin main 2>&1 | sed 's/^/    /'; then
+            fetch_ok=1
             break
         fi
         retries=$((retries + 1))
@@ -212,11 +222,17 @@ cmd_update() {
             sleep $delay
             delay=$((delay * 2))
         else
-            print_error "Failed to pull after 4 attempts."
+            print_error "Failed to fetch after 4 attempts."
             [ $stashed -eq 1 ] && git stash pop 2>/dev/null
             return 1
         fi
     done
+
+    # Pull: try fast-forward first, fall back to reset if diverged
+    if ! git pull --ff-only origin main 2>/dev/null; then
+        print_warn "Local branch diverged. Resetting to origin/main..."
+        git reset --hard origin/main 2>&1 | sed 's/^/    /'
+    fi
     after=$(git rev-parse HEAD)
 
     echo ""

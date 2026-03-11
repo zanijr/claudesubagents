@@ -9,6 +9,7 @@ import { join, resolve, basename, dirname, relative } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
+import { execSync } from "node:child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -368,6 +369,30 @@ function runUpdate() {
   }
 
   info(`Installed: v${installedVersion}`);
+
+  // Pull latest from remote if this is a git repo
+  const gitDir = join(PKG_ROOT, ".git");
+  if (existsSync(gitDir)) {
+    info("Fetching latest from remote...");
+    try {
+      execSync("git fetch origin main", { cwd: PKG_ROOT, stdio: "pipe" });
+      try {
+        execSync("git pull --ff-only origin main", { cwd: PKG_ROOT, stdio: "pipe" });
+      } catch {
+        warn("Local branch diverged. Resetting to origin/main...");
+        execSync("git reset --hard origin/main", { cwd: PKG_ROOT, stdio: "pipe" });
+      }
+    } catch (err) {
+      warn(`Could not fetch from remote: ${err.message}`);
+    }
+
+    // Re-read version from the (now updated) package.json
+    try {
+      const pkg = JSON.parse(readFileSync(join(PKG_ROOT, "package.json"), "utf8"));
+      version = pkg.version;
+    } catch {}
+  }
+
   info(`Latest:    v${version}`);
   console.log("");
 

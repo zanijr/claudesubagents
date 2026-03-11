@@ -9,7 +9,7 @@ This project uses the [Agent Orchestrator](https://github.com/zanijr/claudesubag
 | Say this... | What happens |
 |------------|--------------|
 | "List available agents" | Shows all agents from `.claude/agents/project/` |
-| "Route this task to an agent" | Matches and dispatches via Task tool |
+| "Route this task to an agent" | Matches and dispatches via Agent tool |
 | "Create a new agent for X" | Walks through agent creation |
 | "What agents can handle X?" | Finds matching agents |
 

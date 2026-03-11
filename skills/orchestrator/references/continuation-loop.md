@@ -35,13 +35,11 @@ You are continuation {continuationCount + 1} of {maxContinuations} for this subt
 7. Signal NEEDS_CONTINUATION: true/false in your final response.
 """
 
-    # Dispatch
-    result = Task(
+    # Dispatch via Agent tool
+    result = Agent(
       subagent_type = agentName,
       prompt = prompt,
-      description = shortSummary + (continuationCount > 0 ? " (cont. {continuationCount+1})" : ""),
-      model = agentModel,
-      max_turns = maxTurns
+      description = shortSummary + (continuationCount > 0 ? " (cont. {continuationCount+1})" : "")
     )
 
     # Check result for continuation signal
@@ -74,7 +72,7 @@ You are continuation {continuationCount + 1} of {maxContinuations} for this subt
 
 ## Parallel Dispatch
 
-Dispatch independent subtasks in parallel using multiple Task tool calls in a single message. Each parallel subtask gets its own continuation loop. Only sequence subtasks that have explicit dependencies.
+Dispatch independent subtasks in parallel using multiple Agent tool calls in a single message. Each parallel subtask gets its own continuation loop. Only sequence subtasks that have explicit dependencies.
 
 ## Failure Handling Within Loop
 

@@ -4,7 +4,7 @@ A lightweight framework for routing tasks to specialized AI agents in [Claude Co
 
 ## How It Works
 
-Claude Code has a built-in **Task tool** that can dispatch work to specialized subagents. This framework provides:
+Claude Code has a built-in **Agent tool** that can dispatch work to specialized subagents. This framework provides:
 
 1. **A routing skill** that reads your agent definitions and dispatches to the best match
 2. **An agent creation skill** that walks you through building new agents
@@ -19,7 +19,7 @@ User: "Check if my Docker containers are healthy"
     Reads .claude/agents/project/*.md
     Matches triggers: "docker", "containers"
                     |
-    Dispatches via Task tool to
+    Dispatches via Agent tool to
     "Infrastructure Monitor Agent"
                     |
     Agent runs, returns real results
@@ -87,7 +87,7 @@ Skills activate automatically based on what you say:
 | Say this... | What happens |
 |------------|--------------|
 | "List available agents" | Shows all agents from `.claude/agents/project/` |
-| "Route this task to an agent" | Matches and dispatches via Task tool |
+| "Route this task to an agent" | Matches and dispatches via Agent tool |
 | "Create a new agent for X" | Walks through agent creation |
 | "What agents can handle security?" | Finds matching agents |
 
@@ -133,7 +133,7 @@ You are an expert database administrator...
 | Field | Required | Description |
 |-------|----------|-------------|
 | `id` | Yes | Lowercase hyphenated identifier |
-| `name` | Yes | Display name - must match Task tool `subagent_type` |
+| `name` | Yes | Display name - must match Agent tool `subagent_type` |
 | `description` | Yes | When to use this agent (used for routing) |
 | `capabilities` | Yes | What the agent can do (used for routing) |
 | `triggers` | No | Keywords that route to this agent |
@@ -146,7 +146,7 @@ You are an expert database administrator...
 
 ```json
 {
-    "version": "3.0.0",
+    "version": "3.1.1",
     "agentPaths": [".claude/agents/project"],
     "maxRetries": 2,
     "defaultModel": "sonnet",
@@ -218,7 +218,7 @@ When a task is submitted:
 
 1. All agent `.md` files are read and their frontmatter parsed
 2. Each agent is scored against the task by matching triggers and capabilities
-3. The best match is dispatched via the **Task tool**
+3. The best match is dispatched via the **Agent tool**
 4. If context management is enabled, the dispatch is wrapped in a continuation loop
 5. If the agent fails, the next best match is tried (up to `maxRetries`)
 6. If all agents fail, the user is asked for direction

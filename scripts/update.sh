@@ -29,9 +29,15 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
     fi
 fi
 
-# Pull latest
+# Fetch latest from remote
+git fetch origin main
+
+# Pull latest (try fast-forward first, fall back to reset if diverged)
 BEFORE=$(git rev-parse HEAD)
-git pull --ff-only origin main
+if ! git pull --ff-only origin main 2>/dev/null; then
+    echo "  Local branch diverged from remote. Resetting to origin/main..."
+    git reset --hard origin/main
+fi
 AFTER=$(git rev-parse HEAD)
 
 if [ "$BEFORE" = "$AFTER" ]; then
@@ -43,6 +49,12 @@ else
     git log --oneline "$BEFORE".."$AFTER"
 fi
 
+# Update version file so update checks report correctly
+VERSION=$(grep -o '"version": *"[^"]*"' "$ORCHESTRATOR_DIR/.claude-plugin/plugin.json" 2>/dev/null | head -1 | grep -o '"[^"]*"$' | tr -d '"')
+if [ -n "$VERSION" ]; then
+    echo "$VERSION" > "$HOME/.claude/.orchestrator-version"
+fi
+
 # Restore stashed changes if any
 if [ "${STASHED:-0}" = "1" ]; then
     echo ""
@@ -51,4 +63,4 @@ if [ "${STASHED:-0}" = "1" ]; then
 fi
 
 echo ""
-echo "Done."
+echo "Done. v${VERSION:-unknown}"
