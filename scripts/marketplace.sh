@@ -416,10 +416,12 @@ cmd_status() {
 
     print_success "Installed: v$installed_version"
 
-    # Check skill symlinks
+    # Check skill availability (symlinks or direct copies)
     for skill in orchestrator create-agent; do
         if [ -L "$SKILLS_DIR/$skill" ]; then
             print_success "Skill linked: $skill"
+        elif [ -d "$SKILLS_DIR/$skill" ]; then
+            print_success "Skill installed: $skill"
         else
             print_warn "Skill missing: $skill"
         fi

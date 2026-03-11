@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-version: 3.1.1
+version: 3.1.2
 description: This skill should be used when the user asks to "orchestrate a task", "plan and execute this", "have agents do this", "build this for me", "break this into subtasks", "list agents", or needs autonomous multi-agent task decomposition, execution, self-healing, and learning.
 user-invocable: true
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite, Agent
