@@ -69,7 +69,34 @@ When lessons-learned.md contains a matching pattern:
 - Track retry count in the failure log
 - After exhausting retries, mark subtask as **failed** and continue with others
 
-### Step 5: Record Outcome
+### Step 5: Post-Fix Regression Test
+
+After a fix succeeds, dispatch the **Test Engineer** agent to write a regression test for the specific bug:
+
+```
+Write a regression test for the following bug that was found and fixed:
+
+## Bug Description
+{error from Step 1 — what was wrong and where}
+
+## Root Cause
+{classification from Step 2}
+
+## Fix Applied
+{what the agent changed to fix it}
+
+## Files Involved
+{file paths}
+
+## Test Requirements
+- Test the specific edge case that triggered the bug
+- Test should FAIL if the fix is reverted
+- Add to the existing test suite (don't create a new test file unless necessary)
+```
+
+This ensures every self-healing fix has a test guarding it, so the same bug can never return silently.
+
+### Step 6: Record Outcome
 
 Whether the retry succeeds or fails, record:
 
@@ -79,6 +106,7 @@ Whether the retry succeeds or fails, record:
 - **Original error**: {error}
 - **Root cause**: {classification}
 - **Fix**: {what worked}
+- **Regression test**: {test file and function name}
 - **Lesson**: {actionable advice for next time}
 ```
 → Append to `.claude/memory/lessons-learned.md`

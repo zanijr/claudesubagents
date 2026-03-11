@@ -9,10 +9,12 @@ Autonomous planner, builder, and learner. Takes a goal, breaks it into subtasks,
 3. Plans: decomposes goal into subtasks with **success criteria**
 4. Matches subtasks to agents from `.claude/agents/project/*.md`, auto-creates missing ones
 5. Dispatches all subtasks via **Agent tool** (parallel when independent)
-6. **Self-heals**: when subtasks fail, analyzes the error, adapts strategy, retries
-7. **Verifies**: runs success criteria checks after subtasks complete
-8. **Learns**: writes lessons to `.claude/memory/lessons-learned.md` for future runs
-9. Reports: what succeeded, what failed, what was learned
+6. **Verify-and-reroute gate**: after each agent completes, Code Reviewer checks the work. If it fails, the subtask is routed back to the original agent with review feedback. Loops until clean or retries exhausted.
+7. **Self-heals**: when subtasks fail, analyzes the error, adapts strategy, retries
+8. **Regression tests**: after any bug is found and fixed, Test Engineer writes a test for it
+9. **Continuation loop**: if an agent runs out of context mid-work, it gets re-dispatched with checkpoint context (up to 5 continuations)
+10. **Learns**: writes lessons to `.claude/memory/lessons-learned.md` — shared with team via git
+11. Reports: what succeeded, what failed, what was learned
 
 ## Skills (2.0)
 
@@ -25,8 +27,11 @@ Autonomous planner/executor with self-healing and learning.
 
 **Features:**
 - Dynamic context injection: live agent list, config, lessons learned, recent failures
+- **Verify-and-reroute**: per-subtask quality gate — Code Reviewer checks, reroutes to agent if issues found
+- **Post-fix regression tests**: Test Engineer auto-writes tests for every bug caught
+- **Continuation loop**: agents that run out of context get re-dispatched with checkpoint
 - Self-healing: error analysis → adapt strategy → retry (not blind retries)
-- Persistent memory: lessons learned survive across sessions
+- Persistent memory: lessons learned shared with team via git
 - Lifecycle hooks: `PostToolUseFailure` captures failures, `Stop` prunes memory
 - Progressive disclosure: heavy content in `references/`
 - Argument support: `/orchestrator [goal]`
@@ -70,7 +75,7 @@ The orchestrator maintains persistent knowledge in `.claude/memory/`:
 | `lessons-learned.md` | What worked, what failed, actionable advice | Start of every run |
 | `failure-log.md` | Raw failure records for pattern detection | Start of every run |
 
-Memory is injected via `!`cat .claude/memory/lessons-learned.md`` — the orchestrator sees past knowledge before it starts planning.
+Memory is injected via `!`cat .claude/memory/lessons-learned.md`` — the orchestrator sees past knowledge before it starts planning. Memory is committed to git so all team members benefit from past runs.
 
 ## Self-Healing
 
