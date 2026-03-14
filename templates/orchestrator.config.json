@@ -1,5 +1,5 @@
 {
-    "version": "3.2.0",
+    "version": "3.3.0",
     "agentPaths": [".claude/agents/project"],
     "maxRetries": 2,
     "defaultModel": "sonnet",
