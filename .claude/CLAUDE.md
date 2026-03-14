@@ -50,25 +50,39 @@ After completing work, append lessons learned. Format and pruning rules: `.claud
 
 When the user says **"that's a wrap"**, **"wrap it up"**, **"done for now"**, **"end session"**, or similar session-ending phrases, execute the following shutdown sequence:
 
-1. **Save work in progress**: Write `.claude/memory/session-handoff.md` with this format:
+1. **Finalize task tracking**: Mark all completed TodoWrite tasks as `completed`. For any tasks still in progress or pending, leave them as-is — they'll carry over. This is the source of truth for the "Task Progress" section.
+2. **Catalog bug fixes**: Review all changes made this session. For every bug fix, note: what broke, root cause, the fix, and whether a regression test covers it. If a fix lacks a test, flag it in "What's Next".
+3. **Save work in progress**: Write `.claude/memory/session-handoff.md` with this format:
    ```markdown
    # Session Handoff
    **Date**: {date}
    **Branch**: {current branch}
    ## What Was Done
    {Bulleted summary of completed work this session}
+   ## Task Progress
+   {Snapshot of all TodoWrite tasks with their final status: completed, in_progress, or pending.
+   Use checkboxes:
+   - [x] Completed task
+   - [ ] ~In-progress task~ — {what remains}
+   - [ ] Pending task}
+   ## Bug Fixes Applied
+   {List every bug fix made this session, including:
+   - What the bug was
+   - Root cause
+   - How it was fixed
+   - Whether a regression test was added (yes/no, and test file path if yes)}
    ## What's Still In Progress
    {Any unfinished tasks, with status and what remains}
    ## What's Next
-   {Recommended next steps for the next session}
+   {Recommended next steps for the next session — prioritized, starting with any failed or incomplete items}
    ## Uncommitted Changes
    {Output of `git status --short`, or "None — all committed" if clean}
    ## Key Decisions Made
    {Any important decisions or context the next session needs}
    ```
-2. **Update lessons learned**: Append any new lessons from this session to `.claude/memory/lessons-learned.md`.
-3. **Commit and push**: Stage all changes (including memory files), commit with message "session handoff: {brief summary}", and push to the current branch.
-4. **Confirm to the user**: Print a summary of what was saved and tell them they can pick up right where they left off next time.
+4. **Update lessons learned**: Append any new lessons from this session to `.claude/memory/lessons-learned.md`.
+5. **Commit and push**: Stage all changes (including memory files), commit with message "session handoff: {brief summary}", and push to the current branch.
+6. **Confirm to the user**: Print a summary of what was saved and tell them they can pick up right where they left off next time.
 
 After the next session picks up and the user confirms they've resumed, delete `session-handoff.md` to keep things clean.
 
