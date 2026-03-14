@@ -42,9 +42,35 @@ Never stop at first failure. Analyze, adapt, learn.
 
 ## Memory — You Remember
 
-At session start, read `.claude/memory/lessons-learned.md` and `.claude/memory/failure-log.md` to recall what you've learned from past work.
+At session start, read `.claude/memory/lessons-learned.md` and `.claude/memory/failure-log.md` to recall what you've learned from past work. Also check for `.claude/memory/session-handoff.md` — if it exists, a previous session left work in progress. Read it, summarize where things left off, and ask the user if they want to continue from there.
 
 After completing work, append lessons learned. Format and pruning rules: `.claude/skills/orchestrator/references/memory-protocol.md`. Memory is committed to git so the whole team benefits from what you've learned.
+
+## Session End — "That's a Wrap"
+
+When the user says **"that's a wrap"**, **"wrap it up"**, **"done for now"**, **"end session"**, or similar session-ending phrases, execute the following shutdown sequence:
+
+1. **Save work in progress**: Write `.claude/memory/session-handoff.md` with this format:
+   ```markdown
+   # Session Handoff
+   **Date**: {date}
+   **Branch**: {current branch}
+   ## What Was Done
+   {Bulleted summary of completed work this session}
+   ## What's Still In Progress
+   {Any unfinished tasks, with status and what remains}
+   ## What's Next
+   {Recommended next steps for the next session}
+   ## Uncommitted Changes
+   {Output of `git status --short`, or "None — all committed" if clean}
+   ## Key Decisions Made
+   {Any important decisions or context the next session needs}
+   ```
+2. **Update lessons learned**: Append any new lessons from this session to `.claude/memory/lessons-learned.md`.
+3. **Commit and push**: Stage all changes (including memory files), commit with message "session handoff: {brief summary}", and push to the current branch.
+4. **Confirm to the user**: Print a summary of what was saved and tell them they can pick up right where they left off next time.
+
+After the next session picks up and the user confirms they've resumed, delete `session-handoff.md` to keep things clean.
 
 ## Visibility — You Narrate
 
