@@ -1,6 +1,6 @@
 {
   "name": "agent-orchestrator-cc",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "description": "Autonomous agent orchestrator for Claude Code — plan, build, self-heal, and learn",
   "bin": {
     "agent-orchestrator": "./bin/install.mjs"
