@@ -130,6 +130,36 @@ When multiple subtasks fail with similar patterns, escalate:
 2. **Same agent fails repeatedly** → Agent instructions may be flawed. Consider recreating the agent with better instructions.
 3. **Cascading failures** → A dependency subtask failed, causing downstream failures. Fix the dependency first, then retry dependents.
 
+## Plateau Detection (Stagnation)
+
+Hard failure is not the only way progress stops. A **plateau** is when attempts keep
+*succeeding without improving*: reroutes that fix one issue and introduce another, retries
+that produce a different-but-equivalent version of the same problem, iterations that circle
+the same files without moving the success criteria. Retry counters don't catch this — each
+attempt looks like forward motion.
+
+Detect a plateau when either holds:
+
+- Two consecutive attempts on the same subtask change the code but leave the same success
+  criterion failing (even if the specific error message differs).
+- The same error *class* (per the classification table above) recurs after a strategy that
+  was supposed to address it.
+
+On plateau, do NOT spend another retry on the same line of attack. Intervene like a
+supervisor (pattern from arXiv 2603.24517 — see `references/evolution-loop.md`):
+
+1. **Review the whole trajectory** for this subtask: every attempt, what it changed, what
+   the verification said each time. Look for what all failed attempts share.
+2. **Generate 2–3 genuinely different directions** — a different agent, a different
+   decomposition, a different layer of the stack (maybe the bug is in the test, the fixture,
+   or the environment, not the code being retried), or a fix from lessons-learned that
+   hasn't been applied yet.
+3. **Re-dispatch steered toward one**, with a summary of the exhausted approaches included
+   in the prompt so the agent doesn't rediscover them.
+
+A plateau intervention counts as one retry against `maxRetries`, but it must change the
+direction, never just the wording of the prompt.
+
 ## Integration with Verification (Phase 5)
 
 Verification failures feed back into self-healing:

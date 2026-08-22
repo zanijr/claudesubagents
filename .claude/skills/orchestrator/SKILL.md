@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-version: 3.2.0
+version: 3.4.0
 description: This skill should be used when the user asks to "orchestrate a task", "plan and execute this", "have agents do this", "build this for me", "break this into subtasks", "list agents", or needs autonomous multi-agent task decomposition, execution, self-healing, and learning.
 user-invocable: true
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite, Agent
@@ -41,8 +41,15 @@ Never stop at failure. Analyze it, try a different approach, and record what wor
 Decompose the user's idea into concrete subtasks. For each subtask:
 - What needs to be done (actionable description)
 - What capabilities are required
-- Success criteria (how to verify it worked)
+- Success criteria (how to verify it worked) — **executable wherever possible**: an exact
+  command with checkable output (`pytest tests/test_x.py`, `npm run build`), not prose.
+  Correctness gates everything: work that fails its criteria counts as zero progress no
+  matter how good it looks.
 - Dependencies on other subtasks
+
+**Goal is a measurable improvement of something that already works** (performance, size,
+latency, a benchmark score)? Don't decompose — use the evolution loop instead:
+[references/evolution-loop.md](references/evolution-loop.md).
 
 Check lessons learned (injected above) for relevant past knowledge. If a similar task was attempted before, incorporate what was learned.
 
@@ -68,6 +75,19 @@ If `contextManagement.enabled` is `true` (default):
 
 **Dispatch** independent subtasks **in parallel** via multiple Agent tool calls. Only sequence subtasks with dependencies.
 
+**Dispatch contract** — every implementation dispatch prompt MUST include:
+1. **The verification command(s)** — the subtask's executable success criteria, verbatim.
+2. **The inner loop instruction** — "Run the verification yourself. Iterate
+   edit→evaluate→diagnose until it passes BEFORE returning. Do not return work that fails
+   its own success criteria."
+3. **Relevant knowledge** — pointers to reference material (`.claude/knowledge/` if present,
+   applicable lessons from `.claude/memory/lessons-learned.md`) and, on re-dispatch, the
+   scored history of prior attempts.
+
+Agents that self-verify return working code; the verify-and-reroute gate (Phase 5) then acts
+as a commit gate for what self-verification can't catch, instead of being the first place
+errors surface.
+
 **Continuation handling** — after each agent returns, check the result:
 1. If result contains `NEEDS_CONTINUATION: true` → read the checkpoint file at `.claude/context/checkpoints/{taskRunId}-{subtaskNumber}.md`, then re-dispatch the same agent with the checkpoint context injected (see [references/continuation-loop.md](references/continuation-loop.md) for the full loop)
 2. If result contains `NEEDS_CONTINUATION: false` or no signal → agent is done, clean up checkpoint file, proceed to verify-and-reroute gate
@@ -80,7 +100,7 @@ If `contextManagement.enabled` is `true` (default):
 When a subtask fails, do NOT just retry blindly. Follow the self-healing protocol:
 
 1. **Capture** — Record the exact error, what was attempted, and the environment state
-2. **Analyze** — Determine root cause. Is it a code bug? Missing dependency? Wrong approach? Environment issue?
+2. **Analyze** — Determine root cause. Is it a code bug? Missing dependency? Wrong approach? Environment issue? Or a **plateau** — attempts succeeding without improving (see Plateau Detection in [references/self-healing.md](references/self-healing.md)); plateaus get a trajectory review and a changed direction, never another same-direction retry
 3. **Adapt** — Choose a different strategy:
    - Try a different agent with different capabilities
    - Modify the subtask description with more specific constraints
@@ -191,9 +211,20 @@ Memory is injected into every run via dynamic context injection (see Live Contex
 - Clean up checkpoint files after successful completion.
 - Never delete or overwrite lessons-learned — only append.
 
+## Evolution Mode
+
+For goals whose success is a *number to improve* (throughput, latency, size, benchmark or
+quality score) on something that already works, skip decomposition and run the score-gated
+evolution loop: an executable scoring function with correctness as a hard gate (fail = score
+0), one agent iterating edit→evaluate→diagnose per step, git commits only for versions that
+beat the best committed score, and supervisor intervention when the trajectory stagnates.
+Full protocol: [references/evolution-loop.md](references/evolution-loop.md). Pattern derived
+from arXiv 2603.24517 (`docs/research/avo-agentic-variation-operators.md`).
+
 ## Additional Resources
 
 - [references/verify-and-reroute.md](references/verify-and-reroute.md) — Per-subtask quality gate with automatic reroute loop
+- [references/evolution-loop.md](references/evolution-loop.md) — Score-gated continuous improvement loop for measurable-goal tasks
 - [references/self-healing.md](references/self-healing.md) — Full self-healing protocol with error analysis patterns
 - [references/memory-protocol.md](references/memory-protocol.md) — Memory system details and pruning rules
 - [references/checkpoint-protocol.md](references/checkpoint-protocol.md) — Checkpoint protocol for context management

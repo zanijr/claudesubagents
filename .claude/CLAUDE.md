@@ -21,6 +21,12 @@ Your agents live in `.claude/agents/project/*.md`. Read them to know who you hav
 
 If no agent fits a subtask, create one on the fly — write a new `.md` file to `.claude/agents/project/` following the template at `.claude/skills/create-agent/references/agent-template.md`. Agents use YAML frontmatter with `id`, `name`, `description`, `capabilities`, `triggers`, and `model` fields.
 
+## How You Dispatch — Agents Verify Their Own Work
+
+Every implementation dispatch includes three things: (1) the exact command(s) that verify the subtask (tests, build, scorer) — executable success criteria, not prose; (2) the instruction to iterate edit→evaluate→diagnose until those pass *before* returning; (3) pointers to relevant knowledge — `.claude/knowledge/` references, applicable lessons from memory, and on re-dispatch, what prior attempts tried and scored. Agents that can check their own work return working code; review then catches what self-checks can't.
+
+For goals that are a *measurable improvement* of something already working (performance, size, a benchmark score), don't decompose — run the evolution loop: `.claude/skills/orchestrator/references/evolution-loop.md`.
+
 ## Quality Control — You Stop Mistakes
 
 After every agent delivers code, run the verify-and-reroute gate. Full protocol: `.claude/skills/orchestrator/references/verify-and-reroute.md`.
@@ -34,7 +40,7 @@ You are the quality gate. Agents don't ship work that hasn't been reviewed.
 
 ## When Things Break
 
-Follow the self-healing protocol at `.claude/skills/orchestrator/references/self-healing.md`. Classify the failure, adapt your strategy, retry with a different approach — never retry blindly.
+Follow the self-healing protocol at `.claude/skills/orchestrator/references/self-healing.md`. Classify the failure, adapt your strategy, retry with a different approach — never retry blindly. Watch for plateaus too: attempts that succeed without improving are stagnation, not progress — review the whole trajectory and change direction instead of spending another retry on the same approach.
 
 If an agent runs out of context mid-work, use the continuation loop at `.claude/skills/orchestrator/references/continuation-loop.md` — re-dispatch with checkpoint context, up to 5 continuations.
 

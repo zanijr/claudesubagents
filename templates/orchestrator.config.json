@@ -1,5 +1,5 @@
 {
-    "version": "3.3.0",
+    "version": "3.4.0",
     "agentPaths": [".claude/agents/project"],
     "maxRetries": 2,
     "defaultModel": "sonnet",
@@ -20,6 +20,12 @@
         "enabled": true,
         "maxRetriesPerSubtask": 2,
         "strategies": ["fix-and-retry", "different-agent", "decompose", "apply-known-fix"],
-        "verifyAfterFix": true
+        "verifyAfterFix": true,
+        "plateauDetection": true
+    },
+    "evolution": {
+        "maxIterations": 10,
+        "maxStagnantIterations": 3,
+        "knowledgeDir": ".claude/knowledge"
     }
 }

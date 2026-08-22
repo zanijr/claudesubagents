@@ -10,6 +10,8 @@ Claude Code has a built-in **Agent tool** that can dispatch work to specialized 
 2. **An agent creation skill** that walks you through building new agents
 3. **A standard format** for defining agent capabilities, triggers, and instructions
 4. **Automatic context management** that checkpoints agent progress and re-dispatches when context runs low
+5. **Self-verifying dispatch** — agents get their success criteria as executable commands and iterate until green before returning; a review gate then commits the work
+6. **Evolution mode** — a score-gated continuous-improvement loop for measurable goals (performance, size, benchmark scores), with plateau detection and supervisor intervention (pattern from [arXiv 2603.24517](https://arxiv.org/abs/2603.24517); see `docs/research/`)
 
 ```
 User: "Check if my Docker containers are healthy"
