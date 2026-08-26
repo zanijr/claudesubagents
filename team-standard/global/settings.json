@@ -19,7 +19,11 @@
     "ask": [
       "Bash(gh pr merge *)",
       "Bash(npm publish *)",
-      "Bash(dotnet nuget push *)"
+      "Bash(dotnet nuget push *)",
+      "mcp__Supabase__execute_sql",
+      "mcp__Supabase__apply_migration",
+      "mcp__Supabase__reset_branch",
+      "mcp__Supabase__delete_branch"
     ],
     "disableBypassPermissionsMode": "disable"
   },

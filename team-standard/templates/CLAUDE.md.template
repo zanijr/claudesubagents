@@ -1,0 +1,13 @@
+@AGENTS.md
+
+# {REPO NAME} — project notes for Claude
+
+Agent-agnostic content (what this is, stack, commands, blast radius,
+conventions, lessons) lives in [`AGENTS.md`](AGENTS.md) — imported above.
+This file holds only Claude-specific notes.
+
+<!-- Examples of what belongs here (delete what doesn't apply):
+- Memory duties: which memory/reference files this session keeps current
+- MCP preferences: "if the X MCP server is available, prefer its tools over grepping"
+- Skill pointers: which project skills to reach for and when
+If there is nothing Claude-specific, keep just the import and delete the rest. -->
