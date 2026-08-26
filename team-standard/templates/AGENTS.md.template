@@ -1,0 +1,44 @@
+# {REPO NAME} — Project Guide
+
+<!-- Agent-agnostic project instruction. Any AI tool (and any human) reads this.
+     Claude-specific notes go in CLAUDE.md, which imports this file. -->
+
+## What this is
+
+{One paragraph: what the repo does, who uses it, where it runs.}
+
+## Stack and commands
+
+| Thing | Value |
+|---|---|
+| Language / framework | {e.g. PHP 8 on IIS + React CDN (no build step)} |
+| Data | {e.g. MySQL on SERVERD; AS400 DB2 sync} |
+| Run locally | {command} |
+| Test | {command — if none, say "no test suite" honestly} |
+| Lint / typecheck | {command} |
+| Deploy | {how, or "manual — see docs/"} |
+
+## Blast radius
+
+<!-- REQUIRED for any repo that can touch production. Delete only if truly N/A. -->
+
+- {What production systems this repo can reach: LIVE P21? prod MySQL? EDI feeds? printers?}
+- {Which operations are safe vs. need explicit confirmation}
+- {Read-only paths that must stay read-only}
+
+## Conventions
+
+- {Naming, file placement, patterns to follow or avoid}
+- Status artifact for this repo: `{STATUS.md | RULES_REGISTRY.md | tracking issue #N}` —
+  update it in the same PR as any change it should reflect.
+
+## Hard-won lessons — do not relearn these
+
+<!-- Dated gotcha idiom. Newest at the bottom. Move stable entries here from
+     .claude/memory/lessons-learned.md when they prove permanent. -->
+
+- [YYYY-MM-DD] {fact} — {why it matters} — {what to do instead}
+
+## Do not
+
+- {Repo-specific hard prohibitions, one per line}

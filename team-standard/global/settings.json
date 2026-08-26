@@ -1,0 +1,55 @@
+{
+  "$comment": "Oscar Wilson team standard — copy to <repo>/.claude/settings.json and commit. Personal overrides go in .claude/settings.local.json (git-ignored), never here. Deny rules here cannot be overridden by allow rules at any level.",
+  "permissions": {
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/*.pem)",
+      "Read(**/*.pfx)",
+      "Read(**/*.p12)",
+      "Read(**/id_rsa)",
+      "Read(**/id_ed25519)",
+      "Read(**/secrets/**)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/gh/**)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)"
+    ],
+    "ask": [
+      "Bash(gh pr merge *)",
+      "Bash(npm publish *)",
+      "Bash(dotnet nuget push *)",
+      "mcp__Supabase__execute_sql",
+      "mcp__Supabase__apply_migration",
+      "mcp__Supabase__reset_branch",
+      "mcp__Supabase__delete_branch"
+    ],
+    "disableBypassPermissionsMode": "disable"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/bash-guard.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "extraKnownMarketplaces": {
+    "ow-team": {
+      "source": {
+        "source": "github",
+        "repo": "oscarwilsonengines/claude-team-config"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "ow-standard@ow-team": true
+  }
+}
